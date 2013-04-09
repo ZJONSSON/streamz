@@ -7,7 +7,7 @@ The new streams (Streams2) revolutionize stream-based programming in node.js and
 * I feel that every stream could be piped further (which not the case with Writable).  This is useful for example when streams are forked into multiple directions and we need to know when all forks have ended (i.e. fork each end into a terminal stream).
 * High watermark in a writable stream (i.e. writable buffer) does not make sense to me, unless it is a reference to maximum concurrent functions.   As new streams pull data, buffers should (imho) be central to read-streams.
 
-Enter zStream, the generic all-purpose stream for an object pipeline.
+Enter streamz.js, the generic all-purpose stream for an object pipeline.
 
 The key benefits are the following:
 
@@ -16,10 +16,10 @@ The key benefits are the following:
 * Issues 'end' only when all incoming pipes have ended and no concurrent functions are outstanding.
 * Provides downstream pipes in all instances.  If nothing is "pushed", the downstream pipe will only receive the end event (at the right time).
 
-The stream initiation is as follows (can be called with or without `new`):
+The stream initiation is as follows (can be called with or without `new`):zs
 
 ```js
-var myStream = zStream(fn,[concurrentCap]) 
+var myStream = require("streamz")(fn,[concurrentCap]) 
 ```
 The user-supplied function is executed for each incoming object.  The function can either have one input argument `fn(data)`, which means that the function is synchronous or two inputs `fn(data,callback)` which means that the function is asynchronous, i.e. the `callback` has to be executed at the end.
 

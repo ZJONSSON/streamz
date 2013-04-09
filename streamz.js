@@ -1,8 +1,8 @@
 var stream = require("stream"),
     util = require("util");
 
-function zStream(fn,concurrentCap) {
-  if (!(this instanceof zStream))
+function Streamz(fn,concurrentCap) {
+  if (!(this instanceof Streamz))
     return new zStream(fn);
 
   stream.Transform.call(this,{objectMode: true, highWaterMark: 1});
@@ -22,9 +22,9 @@ function zStream(fn,concurrentCap) {
   });
 }
 
-util.inherits(zStream,stream.Transform);
+util.inherits(Streamz,stream.Transform);
 
-zStream.prototype._transform = function(d,e,callback) {
+Streamz.prototype._transform = function(d,e,callback) {
   // If the function has only one argument it must be syncronous
   if (this._fn.length < 2) return callback(this._fn(d));
 
@@ -43,21 +43,21 @@ zStream.prototype._transform = function(d,e,callback) {
   });
 };
 
-zStream.prototype._fn = function(d) {
+Streamz.prototype._fn = function(d) {
   // The default is a simple passthrough. 
   this.push(d);
 };
 
-zStream.prototype.checkEnd = function() {
+Streamz.prototype.checkEnd = function() {
   // End is only emitted when incoming pipes have end()ed
   // and no concurrent function calls are outstanding
   if (!this._incomingPipes && !this._concurrent)
     this.emit("end");
 };
 
-zStream.prototype.end = function() {
+Streamz.prototype.end = function() {
   this._incomingPipes--;
   this.checkEnd();
 };
 
-module.exports = zStream;
+module.exports = Streamz;

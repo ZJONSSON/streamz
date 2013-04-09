@@ -1,5 +1,5 @@
 {
-  "name": "z-stream",
+  "name": "streamz",
   "version": "0.0.1",
   "description": "A Swiss-army-knife of a stream",
   "keywords": [
@@ -9,8 +9,8 @@
   "author": "Ziggy Jonsson (http://github.com/zjonsson/)",
   "repository": {
     "type": "git",
-    "url": "http://github.com/ZJONSSON/zstream.js.git"
+    "url": "http://github.com/ZJONSSON/streamz.js.git"
   },
-  "main": "zStream.js",
+  "main": "streamz.js",
   "license": "MIT"
 }

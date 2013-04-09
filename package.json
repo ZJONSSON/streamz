@@ -1,10 +1,10 @@
 {
   "name": "streamz",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "A Swiss-army-knife of a stream",
   "keywords": [
     "asynchronous",
-    "async"
+    "stream"
   ],
   "author": "Ziggy Jonsson (http://github.com/zjonsson/)",
   "repository": {

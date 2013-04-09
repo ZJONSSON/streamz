@@ -3,7 +3,7 @@ var stream = require("stream"),
 
 function Streamz(fn,concurrentCap) {
   if (!(this instanceof Streamz))
-    return new zStream(fn);
+    return new Streamz(fn,concurrentCap);
 
   stream.Transform.call(this,{objectMode: true, highWaterMark: 1});
 

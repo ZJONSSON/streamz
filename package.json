@@ -1,0 +1,16 @@
+{
+  "name": "zstream",
+  "version": "0.0.1",
+  "description": "A Swiss-army-knife of a stream",
+  "keywords": [
+    "asynchronous",
+    "async"
+  ],
+  "author": "Ziggy Jonsson (http://github.com/zjonsson/)",
+  "repository": {
+    "type": "git",
+    "url": "http://github.com/ZJONSSON/zstream.js.git"
+  },
+  "main": "zStream.js",
+  "license": "MIT"
+}

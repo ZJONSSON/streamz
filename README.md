@@ -19,12 +19,16 @@ The key benefits are the following:
 The stream initiation is as follows (can be called with or without `new`):zs
 
 ```js
-var myStream = require("streamz")(fn,[concurrentCap]) 
+var myStream = require("streamz")(fn,[concurrentCap],[options]) 
 ```
 The user-supplied function is executed for each incoming object.  The function can either have one input argument `fn(data)`, which means that the function is synchronous or two inputs `fn(data,callback)` which means that the function is asynchronous, i.e. the `callback` has to be executed at the end.
 
-If the intention is to pass data downstream, the particular objects need to be pushed from the user-supplied function (`this.push(data)`).  The function doesn't have to push anything, or it could push some objects not others (i.e. filter).
+Options are passed on to the parent Transform stream, however `objectMode`s is explicitly set as `true`.
+
+If the intention is to pass data downstream, the particular objects need to be pushed from the user-supplied function (`this.push(data)`).  The function doesn't have to push anything, or it could push some objects not others (i.e. filter).   If any objects are pushed however, there must be a receiving stream below, otherwise the pipeline will be blocked when the buffer is full.
 
 The `concurrentCap` is a limit on how many functions (`fn`) can be executed concurrently at any given point in time.   By default, the cap is set at 1, ensuring synchronous excecution, unless otherwise specified.
+
+If function `_ended()` is defined it will be called when the stream has finally ended with a callback.  When the callback returns, the stream will finally emit its own `end` event.
 
 All feedback, pulls and ideas appreciated.

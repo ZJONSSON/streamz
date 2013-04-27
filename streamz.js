@@ -16,6 +16,7 @@ function Streamz(fn,concurrentCap,options) {
   if (fn) this._fn = fn;
   this._incomingPipes = 0;
   this._concurrent = 0;
+  this._endEmitted = false;
 
   this.on("pipe",function() {
     this._incomingPipes++;
@@ -37,18 +38,23 @@ Streamz.prototype._transform = function(d,e,cb) {
   callback = cb;
 
   // If the function has only one argument it must be syncronous
-  if (this._fn.length < 2) return callback(this._fn(d));
+  if (this._fn.length < 2) {
+    this._fn(d);
+    self.checkEnd();
+    return callback();
+  }
 
   // If we haven't reached the cap, we callback immediately
-  if (++this._concurrent < this._concurrentCap) {
+  this._concurrent+=1;
+  if (this._concurrent < this._concurrentCap) {
     callback();
     callback = null;
   }
 
-  this._fn(d,function() {
+  self._fn(d,function() {
     self._concurrent--;
-    if (callback) callback();
     self.checkEnd();
+    if (callback) callback();
   });
 };
 
@@ -60,8 +66,18 @@ Streamz.prototype._fn = function(d) {
 Streamz.prototype.checkEnd = function() {
   // End is only emitted when incoming pipes have end()ed
   // and no concurrent function calls are outstanding
-  if (!this._incomingPipes && !this._concurrent)
-    this.emit("end");
+  if (!this._incomingPipes && !this._concurrent && !this._endEmitted) {
+    var self = this;
+    this.endEmitted = true;
+    this._ended(function() {
+      self.emit("end");
+    });
+  }
+};
+
+// Overwrite this function for any final cleanup
+Streamz.prototype._ended = function(callback) {
+  return callback();
 };
 
 Streamz.prototype.end = function() {

@@ -1,11 +1,15 @@
 var stream = require("stream"),
     util = require("util");
 
-function Streamz(fn,concurrentCap) {
+function Streamz(fn,concurrentCap,options) {
   if (!(this instanceof Streamz))
     return new Streamz(fn,concurrentCap);
 
-  stream.Transform.call(this,{objectMode: true, highWaterMark: 1});
+  options = options || {};
+  options.objectMode = true;
+  options.highWaterMark = options.highWaterMark || 10;
+
+  stream.Transform.call(this,options);
 
   this._concurrentCap = concurrentCap || 1;
 

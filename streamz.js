@@ -80,7 +80,9 @@ Streamz.prototype._ended = function(callback) {
   return callback();
 };
 
-Streamz.prototype.end = function() {
+Streamz.prototype.end = function(d) {
+  if (typeof d !== 'undefined' && d !== null)
+    this._transform(d);
   this._incomingPipes--;
   this.checkEnd();
 };

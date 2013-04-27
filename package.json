@@ -1,6 +1,6 @@
 {
   "name": "streamz",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "A Swiss-army-knife of a stream",
   "keywords": [
     "asynchronous",
@@ -9,7 +9,7 @@
   "author": "Ziggy Jonsson (http://github.com/zjonsson/)",
   "repository": {
     "type": "git",
-    "url": "http://github.com/ZJONSSON/streamz.js.git"
+    "url": "http://github.com/ZJONSSON/streamz"
   },
   "main": "streamz.js",
   "license": "MIT"

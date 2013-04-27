@@ -24,11 +24,16 @@ function Streamz(fn,concurrentCap) {
 
 util.inherits(Streamz,stream.Transform);
 
-Streamz.prototype._transform = function(d,e,callback) {
+Streamz.prototype._transform = function(d,e,cb) {
+  var self = this;
+
+  var callback = function() {
+    setImmediate(cb);
+  };
+  callback = cb;
+
   // If the function has only one argument it must be syncronous
   if (this._fn.length < 2) return callback(this._fn(d));
-
-  var self = this;
 
   // If we haven't reached the cap, we callback immediately
   if (++this._concurrent < this._concurrentCap) {

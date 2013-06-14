@@ -68,7 +68,7 @@ Streamz.prototype.checkEnd = function() {
   // and no concurrent function calls are outstanding
   if (!this._incomingPipes && !this._concurrent && !this._endEmitted) {
     var self = this;
-    this.endEmitted = true;
+    this._endEmitted = true;
     this._ended(function() {
       self.emit("end");
     });

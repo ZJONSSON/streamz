@@ -35,7 +35,7 @@ Streamz.prototype._transform = function(d,e,cb) {
   var callback = function() {
     setImmediate(cb);
   };
-  callback = cb;
+  //callback = cb;
 
   // If the function has only one argument it must be syncronous
   if (this._fn.length < 2) {
@@ -67,11 +67,8 @@ Streamz.prototype.checkEnd = function() {
   // End is only emitted when incoming pipes have end()ed
   // and no concurrent function calls are outstanding
   if (!this._incomingPipes && !this._concurrent && !this._endEmitted) {
-    var self = this;
     this._endEmitted = true;
-    this._ended(function() {
-      self.emit("end");
-    });
+    stream.Transform.prototype.end.call(this);
   }
 };
 
@@ -81,10 +78,10 @@ Streamz.prototype._ended = function(callback) {
 };
 
 Streamz.prototype.end = function(d) {
+  this._incomingPipes--;
   if (typeof d !== 'undefined' && d !== null)
     this._transform(d);
-  this._incomingPipes--;
-  this.checkEnd();
+  else this.checkEnd();
 };
 
 module.exports = Streamz;

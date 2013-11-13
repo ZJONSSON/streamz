@@ -14,15 +14,13 @@ The stream initiation is as follows (can be called with or without `new`):
 
 ```js
 var streamz = require("streamz");
-var myStream = streamz(concurrentCap,fn,[options]);
+var myStream = streamz(fn,[options]);
 ```
 The user-supplied function is executed for each incoming object.  The function can either have one input argument `fn(data)`, which means that the function is synchronous or two inputs `fn(data,callback)` which means that the function is asynchronous, i.e. the `callback` has to be executed at the end.
 
-Options are passed on to the parent Transform stream, however `objectMode`s is explicitly set as `true`.
+Options are passed on to the parent Transform stream, however `objectMode`s is explicitly set as `true`.  By default, the executution of user-supplied function is sequential (i.e. only one function runs at a time). This can be changed by specifying the maximum concurrent functions through a `cap` property in the options (default 1).   Keep in mind that with concurrent cap above one, the order of the outputs might be different from the inputs.
 
 If the intention is to pass data downstream, the particular objects need to be pushed from the user-supplied function (`this.push(data)`).  The function doesn't have to push anything, or it could push some objects not others (i.e. filter).   If any objects are pushed however, there must be a receiving stream below, otherwise the pipeline will be blocked when the buffer is full.
-
-The `concurrentCap` is a limit on how many functions (`fn`) can be executed concurrently at any given point in time.   Setting the cap to 1 will ensure synchronous execution (i.e. only one function running at a a time).
 
 As with node streams a custom [`_flush()`](http://nodejs.org/api/stream.html#stream_transform_flush_callback) function can be defined to handle any remaining buffers after all written data has been consumed.
 

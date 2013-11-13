@@ -1,9 +1,9 @@
 var stream = require("stream"),
     util = require("util");
 
-function Streamz(cap,fn,options) {
+function Streamz(fn,options) {
   if (!(this instanceof Streamz))
-    return new Streamz(cap,fn,options);
+    return new Streamz(fn,cap,options);
 
   options = options || {};
   options.objectMode = true;
@@ -11,7 +11,7 @@ function Streamz(cap,fn,options) {
 
   stream.Transform.call(this,options);
 
-  this._cap = cap || 1;
+  this._cap = options.cap || 1;
 
   if (fn) this._fn = fn;
   this._incomingPipes = 0;

@@ -1,9 +1,9 @@
 var stream = require("stream"),
     util = require("util");
 
-function Streamz(fn,concurrentCap,options) {
+function Streamz(cap,fn,options) {
   if (!(this instanceof Streamz))
-    return new Streamz(fn,concurrentCap);
+    return new Streamz(cap,fn,options);
 
   options = options || {};
   options.objectMode = true;
@@ -11,7 +11,7 @@ function Streamz(fn,concurrentCap,options) {
 
   stream.Transform.call(this,options);
 
-  this._concurrentCap = concurrentCap || 1;
+  this._cap = cap || 1;
 
   if (fn) this._fn = fn;
   this._incomingPipes = 0;
@@ -43,7 +43,7 @@ Streamz.prototype._transform = function(d,e,cb) {
 
   // If we haven't reached the cap, we callback immediately
   this._concurrent+=1;
-  if (this._concurrent < this._concurrentCap) {
+  if (this._concurrent < this._cap) {
     callback();
     callback = null;
   }

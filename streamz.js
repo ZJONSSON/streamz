@@ -3,7 +3,7 @@ var stream = require("stream"),
 
 function Streamz(fn,options) {
   if (!(this instanceof Streamz))
-    return new Streamz(fn,cap,options);
+    return new Streamz(fn,options);
 
   options = options || {};
   options.objectMode = true;

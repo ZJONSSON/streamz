@@ -24,7 +24,9 @@ Options are passed on to the parent Transform stream, however `objectMode` is ex
 
 Concurrency can also be defined through an alternative function signature, with the maximum concurrency as the first argument, fn as the second and options as the third
 
-If the intention is to pass data downstream, the objects/data need to be pushed from the user-supplied function (`this.push(data)`).  The function doesn't have to push anything, or it could push some objects not others (i.e. filter).   If any objects are pushed however, there must be a receiving stream below, otherwise the pipeline will be blocked when the buffer is full.
+If the intention is to pass data downstream, the objects/data need to be pushed from the user-supplied function (`this.push(data)`) and/or return a value.  The function doesn't have to push anything, or it could push some objects not others (i.e. filter).   If any objects are pushed however, there must be a receiving stream below, otherwise the pipeline will be blocked when the buffer is full.
+
+If a function or a promise returns a value (`!=undefined`), that value will be automatically pushed, in addition to any potential `push` statements within the custom function
 
 As with node streams a custom [`_flush()`](http://nodejs.org/api/stream.html#stream_transform_flush_callback) function can be defined to handle any remaining buffers after all written data has been consumed.  It is important however to call the '_flush' function of the `streamz` object prior to custom flushes.   Here is an example of how a custom buffer might be flushed:
 

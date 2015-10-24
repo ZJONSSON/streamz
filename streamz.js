@@ -50,7 +50,8 @@ function Streamz(_c,fn,options) {
 util.inherits(Streamz,stream.Transform);
 
 Streamz.prototype._transform = function(d,e,cb) {
-  var self = this;
+  var self = this,
+      ret;
 
   // If we haven't reached the concurrency, we callback immediately
   this._concurrent+=1;
@@ -68,14 +69,23 @@ Streamz.prototype._transform = function(d,e,cb) {
     
   // If the function has only one argument it must be syncronous or Promise
   if (this._fn.length < 2) {
-    var ret = this._fn(d);
+    ret = this._fn(d);
     // If we get a `.then` function we assume a Promise
     if (ret && typeof ret.then === 'function')
-      ret.catch(Object).then(callback);
-    else
+      ret.then(function(d) {
+        if (d) self.push(d);
+      },Object)
+      .then(callback);
+    else {
+      if (ret !== undefined)
+        self.push(ret);
       callback();
-  } else 
-    self._fn(d,callback);
+    }
+  } else {
+    ret = self._fn(d,callback);
+    if (ret !== undefined)
+      self.push(ret);
+  }
 };
 
 Streamz.prototype._fn = function(d) {

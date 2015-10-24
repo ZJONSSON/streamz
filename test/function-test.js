@@ -26,36 +26,106 @@ describe('function',function() {
     });
   });
 
+  describe('pushing,',function() {
+    describe('static',function() {
+      it('processes data',function() {
+        return test(streamz(function(d) {
+          this.push(d*2);
+        }));    
+      });
+    });
 
-  describe('static',function() {
-    it('processes data',function() {
-      return test(streamz(function(d) {
-        this.push(d*2);
-      }));    
+    describe('with callback',function() {
+      it('processes data',function() {
+        return test(streamz(function(d,cb) {
+          var self = this;
+          setTimeout(function() {
+            self.push(d*2);
+            cb();
+          },10);
+        }));
+      });
+    });
+
+    describe('returning a promise',function() {
+      it('processes data',function() {
+        return test(streamz(function(d) {
+          var self = this;
+          return Promise.delay(20)
+            .then(function() {
+              self.push(d*2);
+            });
+        }));
+      });
     });
   });
 
-  describe('with callback',function() {
-    it('processes data',function() {
-      return test(streamz(function(d,cb) {
-        var self = this;
-        setTimeout(function() {
-          self.push(d*2);
-          cb();
-        },10);
-      }));
+  describe('return value,',function() {
+    describe('static',function() {
+      it('processes data',function() {
+        return test(streamz(function(d) {
+          return d*2;
+        }));    
+      });
+    });
+
+    describe('with callback',function() {
+      it('processes data',function() {
+        return test(streamz(function(d,cb) {
+          setTimeout(function() {
+            cb();
+          },10);
+          return d*2;
+        }));
+      });
+    });
+
+    describe('returning a promise',function() {
+      it('processes data',function() {
+        return test(streamz(function(d) {
+          return Promise.delay(20)
+            .then(function() {
+              return d*2;
+            });
+        }));
+      });
     });
   });
 
-  describe('returning a promise',function() {
-    it('processes data',function() {
-      return test(streamz(function(d) {
-        var self = this;
-        return Promise.delay(20)
-          .then(function() {
-            return self.push(d*2);
-          });
-      }));
+  describe('both pushing and returning',function() {
+    describe('static',function() {
+      it('processes data',function() {
+        return test(streamz(function(d) {
+          this.push(d*2);
+          return d*2;
+        }),4);    
+      });
+    });
+
+    describe('with callback',function() {
+      it('processes data',function() {
+        return test(streamz(function(d,cb) {
+          var self = this;
+          setTimeout(function() {
+            self.push(d*2);
+            cb();
+          },10);
+          return d*2;
+        }),4);
+      });
+    });
+
+    describe('returning a promise',function() {
+      it('processes data',function() {
+        return test(streamz(function(d) {
+          var self = this;
+          return Promise.delay(20)
+            .then(function() {
+              self.push(d*2);
+              return d*2;
+            });
+        }),4);
+      });
     });
   });
 

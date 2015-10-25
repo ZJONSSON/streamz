@@ -74,7 +74,9 @@ Streamz.prototype._transform = function(d,e,cb) {
     if (ret && typeof ret.then === 'function')
       ret.then(function(d) {
         if (d) self.push(d);
-      },Object)
+      },function(e) {
+        self.emit('error',e);
+      })
       .then(callback);
     else {
       if (ret !== undefined)

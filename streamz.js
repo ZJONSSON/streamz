@@ -56,7 +56,11 @@ Streamz.prototype._transform = function(d,e,cb) {
   // If we haven't reached the concurrency, we callback immediately
   this._concurrent+=1;
 
-  var callback = function() {
+  var callback = function(e,d) {
+    if (e) self.emit('error',e);
+    else if (d !== undefined)
+      self.push(d);
+    
     self._concurrent--;
     setImmediate(cb);
     self._finalize();
@@ -73,11 +77,10 @@ Streamz.prototype._transform = function(d,e,cb) {
     // If we get a `.then` function we assume a Promise
     if (ret && typeof ret.then === 'function')
       ret.then(function(d) {
-        if (d) self.push(d);
+        callback(null,d);
       },function(e) {
-        self.emit('error',e);
-      })
-      .then(callback);
+        callback(e);
+      });
     else {
       if (ret !== undefined)
         self.push(ret);

@@ -1,6 +1,8 @@
 var stream = require('stream'),
     util = require('util');
 
+function noop() {}
+
 function Streamz(_c,fn,options) {
   if (!(this instanceof Streamz))
     return new Streamz(_c,fn,options);
@@ -49,50 +51,70 @@ function Streamz(_c,fn,options) {
 
 util.inherits(Streamz,stream.Transform);
 
-Streamz.prototype._transform = function(d,e,cb) {
+Streamz.prototype._transform = function(d,e,_cb) {
   var self = this,
       ret;
 
-  // If we haven't reached the concurrency, we callback immediately
+  // Ensure stream callback is only called once
+  var cb = function() {
+    cb = noop; _cb();
+  };
+
   this._concurrent+=1;
 
-  var callback = function(e,d) {
-    if (e) self.emit('error',e);
-    else if (d !== undefined)
-      self.push(d);
-    
-    callback = Object;
+
+  var done = function() {
+    // Ensure done is only called once
+    done = noop;
     self._concurrent--;
-    setImmediate(cb);
+    cb();
     self._finalize();
   };
 
-  if (this._concurrent < this._concurrency) {
-    setImmediate(cb);
-    cb = Object;
-  }
-
+  // If the return value is not a promise then vanillaCb = `done`
+  // If a promise is returned, we switch the reference to the
+  // original stream callback and only execute `done` when the
+  // promise has been resolved
+  var vanillaCb = done;
+  
   try {
-    ret = this._fn(d,callback);
+    ret = this._fn(d,function(e,d) {
+      if (e)
+        self.emit('error',e);
+      else if (d !== undefined)
+        self.push(d);
+      vanillaCb();
+    });
   } catch(e) {
-    callback(e);
+    self.emit('error',e);
+    vanillaCb();
   }
 
-  // If the function has only one argument it must be syncronous or Promise
-  if (this._fn.length < 2)
-    // If we get a `.then` function we assume a Promise
-    if (ret && typeof ret.then === 'function')
-      ret.then(function(d) {
-        callback(null,d);
-      },function(e) {
-        callback(e);
-      });
-    else 
-      callback(null,ret);
-  // If we got a non-undefined return value we push it anyway
-  else if (ret !== undefined)
-    this.push(ret);
+  if (ret && typeof ret.then === 'function') {
+    // switch reference to the original stream callback
+    // and only call done when the promise is resolved
+    vanillaCb = cb;
+    ret.then(function(d) {
+      if (d !== undefined)
+        self.push(d);
+    },function(e) {
+      self.emit('error',e);
+    })
+    .then(done);
+  } else {
+    // If we got non-promise value, we push it
+    if (ret !== undefined)
+      self.push(ret);
 
+    // If the fn was synchronous we signal we are done
+    if (this._fn.length < 2)
+      vanillaCb();
+  }
+
+  // If we haven't reached the concurrency limit, we schedule
+  // a callback to the transform stream at the next tick
+  if (cb !== noop && this._concurrent < this._concurrency)
+    setImmediate(cb);
 };
 
 Streamz.prototype._fn = function(d) {
@@ -100,7 +122,7 @@ Streamz.prototype._fn = function(d) {
   this.push(d);
 };
 
-Streamz.prototype._finalize = Object;
+Streamz.prototype._finalize = noop;
 
 Streamz.prototype._flush = function(cb) {
   this._finalize = function() {
@@ -122,4 +144,3 @@ Streamz.prototype.end = function(d) {
 };
 
 module.exports = Streamz;
-

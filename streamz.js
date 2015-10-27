@@ -128,9 +128,9 @@ Streamz.prototype._flush = function(cb) {
   this._finalize = function() {
     if (!this._concurrent) {
       setImmediate(cb);
-      cb = undefined;
+      cb = noop;
     }
-  };
+  }.bind(this);
   this._finalize();
 };
 

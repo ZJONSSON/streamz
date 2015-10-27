@@ -18,17 +18,17 @@ streamz(fn,[options]);
 streamz(concurrency,fn,[options])
 
 ```
-The user-supplied function is executed for each incoming object.  The function can either have one input argument `fn(data)` or two inputs where the second one is a callback function to be executed at the end of the transform.  If the function has only one argument it is either assumed synchronous (i.e. finished when the function returns) or promised based (if the function returns an object with an executable `.then`)
+The user-supplied function (`fn`) is executed for each incoming object (either written directly with `.write` or piped from above).  The function must have either one or two arguments.  The first argument represents each incoming data packet and the second one is an optional callback.   The function can return nothing, a value or a promise.
+
+The function can execute multiple manual pushes (`this.push(data)`) to pass any objects downstream.  If the function returns a value (`!= undefined` and not a promise), that value is automatically pushed.   If the function returns a promise that ultimately returns a non-undefined value, that final value is pushed too.  And finally if (optionally) a callback returns a value that gets pushed as well.  Basically any non-undefined returns through function results, callbacks or promise results get automatically pushed.  Therefore if you want to only manually push from inside the function make sure that any return values (or resolves) show up as `undefined`.
+
+When defining a custom function you can chose between a static function, a function with a callback and a function that returns a Promise.   The static function is considered immediately resolved upon execution, whereas the others are considered asynchronous. However, a custom function can also utilize a callback and a promise at the same time - in which case the callback signals when the stream is ready to receive next packet and the promise fulfillment signals when the processing is done.   This allows concurrency management linked to connection pools (i.e. fire cb when a pool issued an available connection) while the promise doesn't get resolved until the corresponding database call has completed.   Using this approach, a stream will not `finish` until outstanding promises have resolved - in addition to any callbacks.
 
 Options are passed on to the parent Transform stream, however `objectMode` is explicitly set as `true`.  By default, the execution of user-supplied function is sequential (i.e. only one function runs at a time). This can be changed by specifying the maximum concurrent functions through a `concurrency` property in the options (defaults to 1).   Keep in mind that with concurrent cap above one, the order of the outputs might be different from the inputs.
 
-Concurrency can also be defined through an alternative function signature, with the maximum concurrency as the first argument, fn as the second and options as the third
+Concurrency can also be defined through the alternative function signature, where the maximum concurrency is the first argument, fn as the second and options as the third.
 
-If the intention is to pass data downstream, the objects/data need to be pushed from the user-supplied function (`this.push(data)`) and/or return a value.  The function doesn't have to push anything, or it could push some objects not others (i.e. filter).   If any objects are pushed however, there must be a receiving stream below, otherwise the pipeline will be blocked when the buffer is full.
-
-If a function or a promise returns a value (`!=undefined`), that value will be automatically pushed, in addition to any potential `push` statements within the custom function
-
-As with node streams a custom [`_flush()`](http://nodejs.org/api/stream.html#stream_transform_flush_callback) function can be defined to handle any remaining buffers after all written data has been consumed.  It is important however to call the '_flush' function of the `streamz` object prior to custom flushes.   Here is an example of how a custom buffer might be flushed:
+As with vanilla node streams, a custom [`_flush()`](http://nodejs.org/api/stream.html#stream_transform_flush_callback) function can be defined to handle any remaining buffers after all written data has been consumed.  It is important however to call the '_flush' function of the `streamz` object prior to custom flushes.   Here is an example of how a custom buffer might be flushed:
 
 ```js
 Customstream.prototype._flush = function(cb) {

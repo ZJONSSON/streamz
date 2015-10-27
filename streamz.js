@@ -56,7 +56,12 @@ Streamz.prototype._transform = function(d,e,cb) {
   // If we haven't reached the concurrency, we callback immediately
   this._concurrent+=1;
 
-  var callback = function() {
+  var callback = function(e,d) {
+    if (e) self.emit('error',e);
+    else if (d !== undefined)
+      self.push(d);
+    
+    callback = Object;
     self._concurrent--;
     setImmediate(cb);
     self._finalize();
@@ -66,28 +71,28 @@ Streamz.prototype._transform = function(d,e,cb) {
     setImmediate(cb);
     cb = Object;
   }
-    
+
+  try {
+    ret = this._fn(d,callback);
+  } catch(e) {
+    callback(e);
+  }
+
   // If the function has only one argument it must be syncronous or Promise
-  if (this._fn.length < 2) {
-    ret = this._fn(d);
+  if (this._fn.length < 2)
     // If we get a `.then` function we assume a Promise
     if (ret && typeof ret.then === 'function')
       ret.then(function(d) {
-        if (d) self.push(d);
+        callback(null,d);
       },function(e) {
-        self.emit('error',e);
-      })
-      .then(callback);
-    else {
-      if (ret !== undefined)
-        self.push(ret);
-      callback();
-    }
-  } else {
-    ret = self._fn(d,callback);
-    if (ret !== undefined)
-      self.push(ret);
-  }
+        callback(e);
+      });
+    else 
+      callback(null,ret);
+  // If we got a non-undefined return value we push it anyway
+  else if (ret !== undefined)
+    this.push(ret);
+
 };
 
 Streamz.prototype._fn = function(d) {

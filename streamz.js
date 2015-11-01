@@ -51,23 +51,32 @@ function Streamz(_c,fn,options) {
 
 util.inherits(Streamz,stream.Transform);
 
+Streamz.prototype.callbacks = undefined;
+
 Streamz.prototype._transform = function(d,e,_cb) {
   var self = this,
       ret;
 
-  // Ensure stream callback is only called once
-  var cb = function() {
-    cb = noop; _cb();
-  };
-
   this._concurrent+=1;
 
+  // If we haven't reached the concurrency limit, we schedule
+  // a callback to the transform stream at the next tick
+  if (this._concurrent < this._concurrency)
+    setImmediate(_cb);
+  else
+    this.callbacks = (this.callbacks || []).concat(_cb);
+
+  var pop = function() {
+    pop = noop;
+    if (self.callbacks && self.callbacks.length)
+      self.callbacks.shift()();
+  };
 
   var done = function() {
     // Ensure done is only called once
     done = noop;
     self._concurrent--;
-    cb();
+    pop();
     self._finalize();
   };
 
@@ -93,7 +102,7 @@ Streamz.prototype._transform = function(d,e,_cb) {
   if (ret && typeof ret.then === 'function') {
     // switch reference to the original stream callback
     // and only call done when the promise is resolved
-    vanillaCb = cb;
+    vanillaCb = pop;
     ret.then(function(d) {
       if (d !== undefined)
         self.push(d);
@@ -110,11 +119,6 @@ Streamz.prototype._transform = function(d,e,_cb) {
     if (this._fn.length < 2)
       vanillaCb();
   }
-
-  // If we haven't reached the concurrency limit, we schedule
-  // a callback to the transform stream at the next tick
-  if (cb !== noop && this._concurrent < this._concurrency)
-    setImmediate(cb);
 };
 
 Streamz.prototype._fn = function(d) {

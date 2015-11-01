@@ -4,8 +4,11 @@ var streamz = require('../streamz'),
     inspect = require('./lib/inspect'),
     assert = require('assert');
 
+var values = [],
+    i=20;
 
-var values = [1,2,3,4,5,6,7,8,9];
+while(i--)
+  values.push(i);
 
 function sum(d,m) {
   return d.reduce(function(p,d) {
@@ -16,10 +19,12 @@ function sum(d,m) {
 // Simple function that doubles incoming numbers
 // and pushes them down after a random delay
 function delayDouble(d) {
+
   // keep track of the maximum number of concurrent functions
   this.maxConcurrent = Math.max(this.maxConcurrent || 0,this._concurrent);
+  if (d==14) this.startConcurrent = this._concurrent;//console.log(d,'concurrent',this._concurrent)
   var self = this;
-  return Promise.delay(100+Math.random()*100)
+  return Promise.delay(d !== 15 ? d*10 : 300)  // Make number 15 extra long
     .then(function() {
       self.push(d*2);
     });
@@ -36,6 +41,7 @@ describe('concurrency',function() {
         .then(function(d) {
           assert.equal(sum(d),sum(values,2));
           assert.equal(s.maxConcurrent,5);
+          assert.equal(s.startConcurrent,5);
         });
     });
   });
@@ -50,6 +56,7 @@ describe('concurrency',function() {
       .then(function(d) {
         assert.equal(sum(d),sum(values,2));
         assert.equal(s.maxConcurrent,5);
+        assert.equal(s.startConcurrent,5);
       });
     });
   });
@@ -64,6 +71,7 @@ describe('concurrency',function() {
       .then(function(d) {
         assert.equal(sum(d),sum(values,2));
         assert.equal(s.maxConcurrent,5);
+        assert.equal(s.startConcurrent,5);
       });
     });
   });
@@ -81,4 +89,5 @@ describe('concurrency',function() {
         });
     });
   });
+
 });

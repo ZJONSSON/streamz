@@ -11,6 +11,7 @@ function sum(d,m) {
 }
 
 function test(s,m) {
+  s.setMaxListeners(1000);
   source(values).pipe(s);
     
   return inspect(s)

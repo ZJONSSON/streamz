@@ -1,4 +1,5 @@
 var stream = require('stream'),
+    Promise = require('bluebird'),
     util = require('util');
 
 function noop() {}
@@ -39,6 +40,16 @@ function Streamz(_c,fn,options) {
 
   this._incomingPipes = 0;
   this._concurrent = 0;
+
+  this.on('error',function(e) {
+    if (this._events.error.length < 2) {
+      var pipes = this._readableState.pipes;
+      if (pipes) [].concat(pipes).forEach(function(child) {
+          child.emit('error',e);
+        });
+      else throw e;
+    }
+  });
 
   this.on('pipe',function() {
     this._incomingPipes++;
@@ -145,6 +156,22 @@ Streamz.prototype.end = function(d) {
       this._transform.apply(this,arguments);
   } else
     stream.Transform.prototype.end.apply(this,arguments);
+};
+
+Streamz.prototype.promise = function() {
+  var defer = Promise.defer(),
+      buffer=[],
+      bufferStream = Streamz(function(d) {
+        buffer = buffer.concat(d);
+      });
+
+  this.pipe(bufferStream)
+    .on('error',defer.reject.bind(defer))
+    .on('finish',function() {
+      defer.resolve(buffer);
+    });
+
+  return defer.promise;
 };
 
 module.exports = Streamz;

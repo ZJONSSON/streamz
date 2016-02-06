@@ -8,6 +8,8 @@ The native stream.Transform does not provide concurrent operations out of the bo
 * Issues 'end' only when all incoming pipes have ended
 * Issues 'finish' only when all incoming pipes have ended and any concurrent functions have finished
 * Provides downstream pipes in all instances.  If nothing is "pushed", the downstream pipe will only receive the end event (at the right time).
+* Passes errors down to the first listener in the chain
+* Provides an easy transition to final promise that is resolved on `finish` and rejected on `error`
 
 The stream initiation is as follows (can be called with or without `new`):
 
@@ -39,3 +41,7 @@ Customstream.prototype._flush = function(cb) {
   });
 };
 ```
+
+Any errors that come up in a streamz object are passed to the children if no custom error listener has been defined.  This allows errors to propagate down to the first error listener or to the rejection of a final promise (if the chain ends in `.promise()`)
+
+A chain that ends with `.promise()` returns a promise that collects any data passed down in an array and resolves when the stream is `finished` or is rejected if any uncaught error occured.   If no data is passed down to the end, the promise simply resolves to an empty array.

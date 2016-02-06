@@ -6,8 +6,8 @@
     "asynchronous",
     "stream"
   ],
-  "scripts" : {
-    "test" : "mocha"
+  "scripts": {
+    "test": "mocha"
   },
   "author": "Ziggy Jonsson (http://github.com/zjonsson/)",
   "repository": {
@@ -16,7 +16,7 @@
   },
   "main": "streamz.js",
   "license": "MIT",
-  "devDependencies": {
-    "bluebird": "^2.10.2"
+  "dependencies": {
+    "bluebird": "~3.2.2"
   }
 }

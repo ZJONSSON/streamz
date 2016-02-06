@@ -41,6 +41,16 @@ function Streamz(_c,fn,options) {
   this._incomingPipes = 0;
   this._concurrent = 0;
 
+  this.on('error',function(e) {
+    if (this._events.error.length < 2) {
+      var pipes = this._readableState.pipes;
+      if (pipes) [].concat(pipes).forEach(function(child) {
+          child.emit('error',e);
+        });
+      else throw e;
+    }
+  });
+
   this.on('pipe',function() {
     this._incomingPipes++;
   });

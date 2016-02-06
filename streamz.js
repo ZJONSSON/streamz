@@ -162,14 +162,12 @@ Streamz.prototype.promise = function() {
   var defer = Promise.defer(),
       buffer=[],
       bufferStream = Streamz(function(d) {
-        buffer = buffer.concat(d);
+        buffer.push(d);
       });
 
   this.pipe(bufferStream)
     .on('error',defer.reject.bind(defer))
-    .on('finish',function() {
-      defer.resolve(buffer);
-    });
+    .on('finish',defer.resolve.bind(defer,buffer));
 
   return defer.promise;
 };

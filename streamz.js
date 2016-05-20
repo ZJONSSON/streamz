@@ -38,7 +38,7 @@ function Streamz(_c,fn,options) {
   else if (options.fn)
     this._fn = options.fn;
 
-  this._incomingPipes = 0;
+  this._incomingPipes = (options.keepAlive ? 1 : 0);
   this._concurrent = 0;
 
   this.on('error',function(e) {

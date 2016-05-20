@@ -30,6 +30,8 @@ Options are passed on to the parent Transform stream, however `objectMode` is ex
 
 Concurrency can also be defined through the alternative function signature, where the maximum concurrency is the first argument, fn as the second and options as the third.
 
+If you specify the option `keepAlive: true`, the `streamz` object will need an extra `.end()` to close.   This prevents accidental closing when piping multiple streams with uncertain timings (including periods of no open streams) into a `streamz` object.
+
 As with vanilla node streams, a custom [`_flush()`](http://nodejs.org/api/stream.html#stream_transform_flush_callback) function can be defined to handle any remaining buffers after all written data has been consumed.  It is important however to call the '_flush' function of the `streamz` object prior to custom flushes.   Here is an example of how a custom buffer might be flushed:
 
 ```js

@@ -54,10 +54,6 @@ function Streamz(_c,fn,options) {
   this.on('pipe',function() {
     this._incomingPipes++;
   });
-
-  this.on('unpipe',function() {
-    this._incomingPipes--;
-  });
 }
 
 util.inherits(Streamz,stream.Transform);

@@ -37,6 +37,7 @@ describe('multiple pipes',function() {
      .then(function(d) {
         assert.equal(sum(d),sum(values,2)*3);
         assert.equal(s.maxConcurrent,3);
+        assert.equal(s._incomingPipes,0);
       });
   });
 });

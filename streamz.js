@@ -155,17 +155,19 @@ Streamz.prototype.end = function(d) {
 };
 
 Streamz.prototype.promise = function() {
-  var defer = Promise.defer(),
+  var self = this,
       buffer=[],
       bufferStream = Streamz(function(d) {
         buffer.push(d);
       });
 
-  this.pipe(bufferStream)
-    .on('error',defer.reject.bind(defer))
-    .on('finish',defer.resolve.bind(defer,buffer));
-
-  return defer.promise;
+  return new Promise(function(resolve,reject) {
+    self.pipe(bufferStream)
+      .on('error',reject)
+      .on('finish',function() {
+        resolve(buffer)
+      });
+  });
 };
 
 module.exports = Streamz;

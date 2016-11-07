@@ -1,6 +1,6 @@
 {
   "name": "streamz",
-  "version": "1.5.3",
+  "version": "1.6.0",
   "description": "A Swiss-army-knife of a stream",
   "keywords": [
     "asynchronous",
@@ -17,6 +17,6 @@
   "main": "streamz.js",
   "license": "MIT",
   "dependencies": {
-    "bluebird": "~3.2.2"
+    "bluebird": "~3.4.6"
   }
 }

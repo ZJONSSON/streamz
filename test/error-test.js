@@ -1,6 +1,7 @@
 var streamz = require('../streamz'),
     Promise = require('bluebird'),
-    assert = require('assert');
+    assert = require('assert'),
+    fs = require('fs');
 
 var values = [1,2,3,4,5,6,7,8,9];
 
@@ -76,12 +77,14 @@ describe('error',function() {
           if (d == 5) return Promise.reject('EXCEPTION');
           else return Promise.resolve(d);
         }))
-        .on('error',function(e) {
-          err = e;
-        })
         .pipe(streamz(function(d) {
           max = d;
-        }));
+        }))
+        .promise()
+        .then(null,function(e) {
+          err = e;
+        });
+        
 
         return Promise.delay(200)
           .then(function() {
@@ -89,6 +92,19 @@ describe('error',function() {
             assert.equal(max,4);
         });
       });      
+  });
+
+  describe('error in component above',function() {
+    it('is captured',function() {
+      fs.createReadStream('this_file_does_not_exists')
+        .pipe(streamz())
+        .promise()
+        .then(function() {
+          throw 'Should Error';
+        },function(e) {
+          assert.equal(e.code,'ENOENT');
+        });
+    });
   });
 
 });

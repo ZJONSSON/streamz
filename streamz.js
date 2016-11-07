@@ -51,7 +51,13 @@ function Streamz(_c,fn,options) {
     }
   });
 
-  this.on('pipe',function() {
+  this.on('pipe',function(p) {
+    var self = this;
+    if (!(p instanceof Streamz) && (!p._events.error || !p._events.error.length))
+      p.on('error',function(e) {
+        self.emit('error',e);
+      });
+
     this._incomingPipes++;
   });
 }
@@ -165,7 +171,7 @@ Streamz.prototype.promise = function() {
     self.pipe(bufferStream)
       .on('error',reject)
       .on('finish',function() {
-        resolve(buffer)
+        resolve(buffer);
       });
   });
 };

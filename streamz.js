@@ -53,7 +53,7 @@ function Streamz(_c,fn,options) {
 
   this.on('pipe',function(p) {
     var self = this;
-    if (!(p instanceof Streamz) && (!p._events.error || !p._events.error.length))
+    if (!(p instanceof Streamz) && (!p._events.error || !p._events.error.length || p._events.error.length === 1))
       p.on('error',function(e) {
         self.emit('error',e);
       });

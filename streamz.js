@@ -27,7 +27,9 @@ function Streamz(_c,fn,options) {
 
   options = options || {};
   options.objectMode = true;
-  options.highWaterMark = options.highWaterMark || 10;
+
+  if (options.highWaterMark === undefined) 
+    options.highWaterMark = 10;
 
   stream.Transform.call(this,options);
 

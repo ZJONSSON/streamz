@@ -42,6 +42,8 @@ function Streamz(_c,fn,options) {
 
   this._incomingPipes = (options.keepAlive ? 1 : 0);
   this._concurrent = 0;
+  if (options.flush)
+    this._flush = options.flush;
 
   this.on('error',function(e) {
     if (this._events.error.length < 2) {
@@ -67,6 +69,8 @@ function Streamz(_c,fn,options) {
 util.inherits(Streamz,stream.Transform);
 
 Streamz.prototype.callbacks = undefined;
+
+Streamz.prototype._flush = function(cb) { setImmediate(cb);};
 
 Streamz.prototype._transform = function(d,e,_cb) {
   var self = this,

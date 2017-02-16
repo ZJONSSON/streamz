@@ -32,16 +32,23 @@ Concurrency can also be defined through the alternative function signature, wher
 
 If you specify the option `keepAlive: true`, the `streamz` object will need an extra `.end()` to close.   This prevents accidental closing when piping multiple streams with uncertain timings (including periods of no open streams) into a `streamz` object.
 
-As with vanilla node streams, a custom [`_flush()`](http://nodejs.org/api/stream.html#stream_transform_flush_callback) function can be defined to handle any remaining buffers after all written data has been consumed.  It is important however to call the '_flush' function of the `streamz` object prior to custom flushes.   Here is an example of how a custom buffer might be flushed:
+Streamz supports `self.writes`, i.e. if you `this.write(data)` within the custom function, the data will be processed by the streamz component (recursively) even if the inbound stream has ended.  This can be useful for scrapers that need to traverse through pages etc.
+
+As with vanilla node streams, a custom [`_flush()`](http://nodejs.org/api/stream.html#stream_transform_flush_callback) function can be defined to handle any remaining buffers after all written data has been consumed.  The flush can be defined on the fly with `flush` property in options.
+
+Here is an example of a stream that buffers:
 
 ```js
-Customstream.prototype._flush = function(cb) {
-  var self = this;
-  Streamz.prototype._flush.call(this,function() {
-    self.push(self.customBuffer);
-    setImmediate(cb);
-  });
-};
+streamz(function(d) {
+  this.buffer = this.buffer || [];
+  this.buffer.push(d);
+},{
+  flush : function(cb) {
+    this.push(this.buffer);
+    cb();
+  }
+})
+
 ```
 
 Any errors that come up in a streamz object are passed to the children if no custom error listener has been defined.  This allows errors to propagate down to the first error listener or to the rejection of a final promise (if the chain ends in `.promise()`)

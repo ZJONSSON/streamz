@@ -42,6 +42,8 @@ function Streamz(_c,fn,options) {
 
   this._incomingPipes = (options.keepAlive ? 1 : 0);
   this._concurrent = 0;
+  if (options.flush)
+    this._flush = options.flush;
 
   this.on('error',function(e) {
     if (this._events.error.length < 2) {
@@ -67,6 +69,8 @@ function Streamz(_c,fn,options) {
 util.inherits(Streamz,stream.Transform);
 
 Streamz.prototype.callbacks = undefined;
+
+Streamz.prototype._flush = function(cb) { setImmediate(cb);};
 
 Streamz.prototype._transform = function(d,e,_cb) {
   var self = this,
@@ -143,23 +147,17 @@ Streamz.prototype._fn = function(d) {
 
 Streamz.prototype._finalize = noop;
 
-Streamz.prototype._flush = function(cb) {
-  this._finalize = function() {
-    if (!this._concurrent) {
-      setImmediate(cb);
-      cb = noop;
-    }
-  }.bind(this);
-  this._finalize();
-};
-
 Streamz.prototype.end = function(d) {
   this._incomingPipes--;
-  if (this._incomingPipes>0) {
-    if (d !== undefined)
-      this._transform.apply(this,arguments);
-  } else
-    stream.Transform.prototype.end.apply(this,arguments);
+  if (d !== undefined)
+    this._transform(d,null,noop);
+  if (this._incomingPipes < 1) {
+    this._finalize = function() {
+      if (!this._concurrent && !this._writableState.length)
+        stream.Transform.prototype.end.apply(this,arguments);
+    }.bind(this);
+    this._finalize();
+  }
 };
 
 Streamz.prototype.promise = function() {

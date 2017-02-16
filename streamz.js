@@ -143,23 +143,17 @@ Streamz.prototype._fn = function(d) {
 
 Streamz.prototype._finalize = noop;
 
-Streamz.prototype._flush = function(cb) {
-  this._finalize = function() {
-    if (!this._concurrent) {
-      setImmediate(cb);
-      cb = noop;
-    }
-  }.bind(this);
-  this._finalize();
-};
-
 Streamz.prototype.end = function(d) {
   this._incomingPipes--;
-  if (this._incomingPipes>0) {
-    if (d !== undefined)
-      this._transform.apply(this,arguments);
-  } else
-    stream.Transform.prototype.end.apply(this,arguments);
+  if (d !== undefined)
+    this._transform(d,null,noop);
+  if (this._incomingPipes < 1) {
+    this._finalize = function() {
+      if (!this._concurrent && !this._writableState.length)
+        stream.Transform.prototype.end.apply(this,arguments);
+    }.bind(this);
+    this._finalize();
+  }
 };
 
 Streamz.prototype.promise = function() {

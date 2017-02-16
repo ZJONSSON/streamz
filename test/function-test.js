@@ -103,6 +103,28 @@ describe('function',function() {
       });
     });
 
+    describe('with this.write after stream has ended',function() {
+     it('processes data',function() {
+        var s = streamz(function(d) {
+          var self = this;
+          if (d === 8 || d === 9)
+            return Promise.delay(10)
+              .then(function() {
+                self.write(d+2);
+              });
+          else
+            return d;
+        });
+
+        return source(values)
+          .pipe(s)
+          .promise()
+          .then(function(d) {
+            assert.deepEqual(d,[1,2,3,4,5,6,7,10,11]);
+          });
+      });
+    });
+
     describe('with callback',function() {
       it('processes data',function() {
         return test(streamz(function(d,cb) {
@@ -130,6 +152,7 @@ describe('function',function() {
     });
   });
 
+
   describe('async without cb or promise',function() {
     it('fails to capture the data',function() {
       return test(streamz(function(d) {
@@ -145,5 +168,7 @@ describe('function',function() {
       },Object);
     });
   });
+
+
 
 });

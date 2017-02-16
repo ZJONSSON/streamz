@@ -58,15 +58,13 @@ describe('callback and promise',function() {
   input.end();
 
   var concurrent = 0,
-      maxConcurrent = 0,
-      concurrentAtEnd,
-      timeAtEnd;
+      maxConcurrent = 0;
 
   var main = streamz(function(d,cb) {
     var self = this;
     maxConcurrent = Math.max(maxConcurrent,concurrent++);
     return pool.getConnection()
-      .then(function(connection) {      
+      .then(function(connection) {
         cb(null,'callback'); // signal we have received connection
         return connection.query
           .then(function() {
@@ -76,10 +74,6 @@ describe('callback and promise',function() {
             return 'promise';
           });
       });
-  })
-  .on('finish',function() { 
-    concurrentAtEnd = concurrent;
-    timeAtEnd = Number(new Date());
   });
 
   input
@@ -91,18 +85,6 @@ describe('callback and promise',function() {
   it('maximum concurrency controlled by callbacks',function() {
     return done.then(function() {
       assert.equal(maxConcurrent,poolSize);
-    });
-  });
-
-  it('concurrency at the end is controlled by callbacks',function() {
-    return done.then(function() {
-      assert.equal(concurrentAtEnd,poolSize);
-    });
-  });
-
-  it('next stream only finishes when prev outstanding promises are resolved',function() {
-    return done.then(function() {
-      assert(Number(new Date())-timeAtEnd > queryDelay,'duration is longer than promise delay');
     });
   });
 

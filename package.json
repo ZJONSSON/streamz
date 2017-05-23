@@ -1,13 +1,13 @@
 {
   "name": "streamz",
-  "version": "1.7.1",
+  "version": "1.8.0",
   "description": "A Swiss-army-knife of a stream",
   "keywords": [
     "asynchronous",
     "stream"
   ],
   "scripts": {
-    "test": "mocha"
+    "test": "tap test --jobs=10 -Rspec"
   },
   "author": "Ziggy Jonsson (http://github.com/zjonsson/)",
   "repository": {
@@ -18,5 +18,8 @@
   "license": "MIT",
   "dependencies": {
     "bluebird": "~3.5.0"
+  },
+  "devDependencies": {
+    "tap": "^10.3.2"
   }
 }

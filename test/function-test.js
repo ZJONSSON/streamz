@@ -1,174 +1,103 @@
-var streamz = require('../streamz'),
-    Promise = require('bluebird'),
-    inspect = require('./lib/inspect'),
-    source = require('./lib/source'),
-    assert = require('assert');
+const streamz = require('../streamz');
+const Promise = require('bluebird');
+const source = require('./lib/source');
+const t = require('tap');
 
-var values = [1,2,3,4,5,6,7,8,9];
+const values = [1,2,3,4,5,6,7,8,9];
+const sum = (d,m) => d.reduce((p,d)  => p+d * (m ||1),0);
 
-function sum(d,m) {
-  return d.reduce(function(p,d) { return p+d * (m ||1);},0);
-}
-
-function test(s,m) {
+function test(s,m,t,e) {
   s.setMaxListeners(1000);
-  source(values).pipe(s);
-    
-  return inspect(s)
-    .then(function(d) {
-      assert.deepEqual(sum(d),sum(values,m || 2));
-    });
+  return source(values).pipe(s).promise()
+    .then(d => t.same(sum(d),sum(values,m || 2),e));
 }
 
-describe('function',function() {
-   describe('none',function() {
-    it('passes through data',function() {
-      return test(streamz(),1);    
-    });
+t.test('function',{autoend:true,jobs:10}, t => {
+  t.test('none',t => {
+    return test(streamz(),1,t,'passes through data');
   });
 
-  describe('pushing,',function() {
-    describe('static',function() {
-      it('processes data',function() {
-        return test(streamz(function(d) {
+  t.test('pushing',t => {
+    const fn = function(d) {
+      this.push(d*2);
+    };
+    return test(streamz(fn),2,t,'processes data');
+  });
+
+  t.test('with callback', t => {
+    const fn = function(d,cb) {
+      setTimeout(() => {
+        this.push(d*2);
+        cb();
+      },10);
+    };
+    return test(streamz(fn),2,t,'processes data');
+  });
+
+  t.test('with promise that pushes', t => {
+    const fn = function(d) {
+      return Promise.delay(20)
+        .then(() => {
           this.push(d*2);
-        }));    
-      });
-    });
-
-    describe('with callback',function() {
-      it('processes data',function() {
-        return test(streamz(function(d,cb) {
-          var self = this;
-          setTimeout(function() {
-            self.push(d*2);
-            cb();
-          },10);
-        }));
-      });
-    });
-
-    describe('returning a promise',function() {
-      it('processes data',function() {
-        return test(streamz(function(d) {
-          var self = this;
-          return Promise.delay(20)
-            .then(function() {
-              self.push(d*2);
-            });
-        }));
-      });
-    });
-  });
-
-  describe('return value,',function() {
-    describe('static',function() {
-      it('processes data',function() {
-        return test(streamz(function(d) {
-          return d*2;
-        }));    
-      });
-    });
-
-    describe('with callback',function() {
-      it('processes data',function() {
-        return test(streamz(function(d,cb) {
-          setTimeout(function() {
-            cb();
-          },10);
-          return d*2;
-        }));
-      });
-    });
-
-    describe('returning a promise',function() {
-      it('processes data',function() {
-        return test(streamz(function(d) {
-          return Promise.delay(20)
-            .then(function() {
-              return d*2;
-            });
-        }));
-      });
-    });
-  });
-
-  describe('both pushing and returning',function() {
-    describe('static',function() {
-      it('processes data',function() {
-        return test(streamz(function(d) {
-          this.push(d*2);
-          return d*2;
-        }),4);    
-      });
-    });
-
-    describe('with this.write after stream has ended',function() {
-     it('processes data',function() {
-        var s = streamz(function(d) {
-          var self = this;
-          if (d === 8 || d === 9)
-            return Promise.delay(10)
-              .then(function() {
-                self.write(d+2);
-              });
-          else
-            return d;
         });
+    };
+    return test(streamz(fn),2,t,'processes data');
+  });
 
-        return source(values)
-          .pipe(s)
-          .promise()
-          .then(function(d) {
-            assert.deepEqual(d,[1,2,3,4,5,6,7,10,11]);
+  t.test('with promise that returns', t => {
+    const fn = function(d) {
+      return Promise.delay(20)
+        .then(() => d*2);
+    };
+    return test(streamz(fn),2,t,'processes data');
+  });
+
+  t.test('both pushing and returning', t => {
+    const fn = function(d) {
+      this.push(d*2);
+      return d*2;
+    };
+
+    return test(streamz(fn),4,t,'processes data');
+  });
+
+
+  t.test('write after stream ended',t => {
+    const s = streamz(function(d) {
+      if (d === 8 || d === 9)
+        return Promise.delay(10)
+          .then(() => {
+            this.write(d+2);
           });
-      });
+      else
+        return d;
     });
 
-    describe('with callback',function() {
-      it('processes data',function() {
-        return test(streamz(function(d,cb) {
-          var self = this;
-          setTimeout(function() {
-            self.push(d*2);
-            cb();
-          },10);
+    return source(values)
+      .pipe(s)
+      .promise()
+      .then(d => t.same(d,[1,2,3,4,5,6,7,10,11]));
+  });
+    
+  t.test('with push, empty callback and return value', t => {
+    const fn = function(d,cb) {
+      setTimeout(() => {
+        this.push(d*2);
+        cb();
+      },10);
+      return d*2;
+    };
+    return test(streamz(fn),4,t,'processes data');
+  });
+
+  t.test('with promise resolving in push and return value', t => {
+    const fn = function(d) {
+      return Promise.delay(20)
+        .then(() => {
+          this.push(d*2);
           return d*2;
-        }),4);
-      });
-    });
-
-    describe('returning a promise',function() {
-      it('processes data',function() {
-        return test(streamz(function(d) {
-          var self = this;
-          return Promise.delay(20)
-            .then(function() {
-              self.push(d*2);
-              return d*2;
-            });
-        }),4);
-      });
-    });
+        });
+    };
+    return test(streamz(fn),4,t,'processes data');
   });
-
-
-  describe('async without cb or promise',function() {
-    it('fails to capture the data',function() {
-      return test(streamz(function(d) {
-        var self = this;
-        setTimeout(function() {
-          self.push(d*2);
-        },10);
-        // Capture the inevitable stream.push() after EOF
-        self.on('error',Object);
-      }))
-      .then(function() {
-        throw 'Should Error';
-      },Object);
-    });
-  });
-
-
-
 });

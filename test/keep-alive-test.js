@@ -1,51 +1,46 @@
-var streamz = require('../streamz'),
-    Promise = require('bluebird'),
-    source = require('./lib/source'),
-    inspect = require('./lib/inspect'),
-    assert = require('assert');
+const streamz = require('../streamz');
+const Promise = require('bluebird');
+const source = require('./lib/source');
+const t = require('tap');
 
-var values = [1,2,3,4];
+const values = [1,2,3,4];
 
 function test(s) {
   // Capture any error raised in the main stream
-  var error;
-  s.on('error',function(e) {
-    error = e;
-  });
+  let error;
+  s.on('error',e => error = e);
 
   // First pipe
   source(values,1).pipe(s);
 
   return Promise.delay(100)
-    .then(function() {
+    .then(() => {
       // Second pipe after first one closed
       source(values,1)
         .on('end',s.end.bind(s))
         .pipe(s);
       return Promise.delay(100);
     })
-    .then(function() {
+    .then(() => {
       if (error)
         throw error;
       else
-        return inspect(s);
+        return s.promise();
     });
 }
 
-describe('non-overlapping pipes',function() {
-  it('error without keepAlive',function() {
+t.test('non-overlapping pipes',{autoend:true,jobs:2}, t => {
+  t.test('without keepAlive',t => {
     return test(streamz())
-      .then(function() {
+      .then(() => {
         throw 'SHOULD_ERROR';
-      },function(e) {
-        assert.equal(e.message,'write after end');
+      },e => {
+        t.same(e.message,'write after end','should error');
       });
   });
 
-  it('works with keepAlive',function() {
+  t.test('with keepAlive',t => {
     return test(streamz(Number,{keepAlive:true}))
-      .then(function(d) {
-        assert.deepEqual(d,[1,2,3,4,1,2,3,4]);
-      });
+      .then(d => t.same(d,[1,2,3,4,1,2,3,4],'stream stays open'));
   });
 });

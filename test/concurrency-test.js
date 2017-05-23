@@ -1,93 +1,72 @@
-var streamz = require('../streamz'),
-    Promise = require('bluebird'),
-    source = require('./lib/source'),
-    inspect = require('./lib/inspect'),
-    assert = require('assert');
+const streamz = require('../streamz');
+const Promise = require('bluebird');
+const source = require('./lib/source');
+const t = require('tap');
 
-var values = [],
-    i=20;
-
-while(i--)
-  values.push(i);
-
-function sum(d,m) {
-  return d.reduce(function(p,d) {
-    return p+d * (m ||1);
-  },0);
-}
+const values =  [...Array(20)].map( (d,i) => i);
+const sum = (d,m) => d.reduce((p,d)  => p+d * (m ||1),0);
 
 // Simple function that doubles incoming numbers
 // and pushes them down after a random delay
 function delayDouble(d) {
-
   // keep track of the maximum number of concurrent functions
   this.maxConcurrent = Math.max(this.maxConcurrent || 0,this._concurrent);
-  if (d==14) this.startConcurrent = this._concurrent;//console.log(d,'concurrent',this._concurrent)
-  var self = this;
+  if (d==14) this.startConcurrent = this._concurrent;
   return Promise.delay(d !== 15 ? d*10 : 300)  // Make number 15 extra long
-    .then(function() {
-      self.push(d*2);
+    .then(() => {
+      this.push(d*2);
     });
 }
 
-describe('concurrency',function() {
-  describe('defined as first param',function() {
-    it('is run concurrently',function() {
-      var s = streamz(5,delayDouble);
+t.test('concurrency',{autoend: true, jobs: 10}, t => {
+  t.test('streamz(5,fn)',t => {
+    const s = streamz(5,delayDouble);
 
-      source(values).pipe(s);
-
-      return inspect(s)
-        .then(function(d) {
-          assert.equal(sum(d),sum(values,2));
-          assert.equal(s.maxConcurrent,5);
-          assert.equal(s.startConcurrent,5);
-        });
-    });
-  });
-
-  describe('defined in options',function() {
-    it('is run concurrently',function() {
-    var s = streamz(delayDouble,{concurrency:5});
-
-    source(values).pipe(s);
-    
-    return inspect(s)
-      .then(function(d) {
-        assert.equal(sum(d),sum(values,2));
-        assert.equal(s.maxConcurrent,5);
-        assert.equal(s.startConcurrent,5);
+    return source(values)
+      .pipe(s)
+      .promise()
+      .then(d => {
+        t.same(sum(d),sum(values,2),'returns correct output');
+        t.same(s.maxConcurrent,5,'has max 5 concurrent');
+        t.same(s.startConcurrent,5,'starts with 5 concurrent');
       });
-    });
   });
 
-  describe('legacy: number as options',function() {
-    it('is run concurrently',function() {
-    var s = streamz(delayDouble,5);
+  t.test('streamz(fn,{concurrency:5})',t => {
+    const s = streamz(delayDouble,{concurrency:5});
 
-    source(values).pipe(s);
-    
-    return inspect(s)
-      .then(function(d) {
-        assert.equal(sum(d),sum(values,2));
-        assert.equal(s.maxConcurrent,5);
-        assert.equal(s.startConcurrent,5);
+    return source(values)
+      .pipe(s)
+      .promise()
+      .then(d => {
+        t.same(sum(d),sum(values,2),'returns correct output');
+        t.same(s.maxConcurrent,5,'has max 5 concurrent');
+        t.same(s.startConcurrent,5,'starts with 5 concurrent');
       });
-    });
   });
 
-  describe('larger than length of data',function() {
-    it('works',function() {
-      var s = streamz(delayDouble,{concurrency:1000});
+  t.test('legacy: streamz(fn,5)',t => {
+    const s = streamz(delayDouble,5);
 
-      source(values).pipe(s);
-
-      return inspect(s)
-        .then(function(d) {
-          assert.equal(sum(d),sum(values,2));
-          assert(s.maxConcurrent > 5,'maxConcurrent more than 5');
-        });
-    });
+    return source(values)
+      .pipe(s)
+      .promise()
+      .then(d => {
+        t.same(sum(d),sum(values,2),'returns correct output');
+        t.same(s.maxConcurrent,5,'has max 5 concurrent');
+        t.same(s.startConcurrent,5,'starts with 5 concurrent');
+      });
   });
 
+  t.test('concurrency larger than data',t => {
+    const s = streamz(delayDouble,{concurrency:1000});
+    
+    return source(values)
+      .pipe(s)
+      .promise()
+      .then(d => {
+        t.same(sum(d),sum(values,2),'correct');
+        t.ok(s.maxConcurrent > 5,'maxConcurrent more than 5');
+      });
+  });
 });

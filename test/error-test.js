@@ -1,110 +1,72 @@
-var streamz = require('../streamz'),
-    Promise = require('bluebird'),
-    assert = require('assert'),
-    fs = require('fs');
+const streamz = require('../streamz');
+const Promise = require('bluebird');
+const valueStream = require('./lib/source');
+const fs = require('fs');
+const t = require('tap');
 
-var values = [1,2,3,4,5,6,7,8,9];
+t.test('error', {autoend:true, jobs: 10}, t => {
+  t.test('thrown in function',t => {
+    let max,err;
 
-var valueStream = function() {
-  var s = require('stream').PassThrough({objectMode:true});
-  values.forEach(function(d,i) {
-    setTimeout(function() {
-      s.write(d);
-      if (i == values.length -1)
-        s.end();
-    },i*1);
-  });
-  return s;
-};
+    valueStream()
+      .pipe(streamz(d => {
+        if (d == 5) throw 'EXCEPTION';
+        else return d;  
+      }))
+      .on('error',e => err = e)
+      .pipe(streamz(d => max = d));
 
-
-describe('error',function() {
-
-  describe('thrown in function',function() {
-    it('emits error and stops',function() {
-      var max,err;
-
-      valueStream()
-        .pipe(streamz(function(d) {
-          if (d == 5) throw 'EXCEPTION';
-          else return d;  
-        }))
-        .on('error',function(e) {
-          err = e;
-        })
-        .pipe(streamz(function(d) {
-          max = d;
-        }));
-
-        return Promise.delay(200)
-          .then(function() {
-            assert.equal(err,'EXCEPTION');
-            assert.equal(max,4);
-        });
-      });      
+    return Promise.delay(400)
+      .then(() => {
+        t.same(err,'EXCEPTION','emits error');
+        t.same(max,4,'stops');
+      });
   });
 
-  describe('as error callback',function() {
-    it('emits error and stops',function() {
-      var max,err;
+  t.test('as error callback',t => {
+    let max,err;
 
-      valueStream()
-        .pipe(streamz(function(d,cb) {
-          if (d == 5) cb('EXCEPTION');
-          else cb(null,d);
-        }))
-        .on('error',function(e) {
-          err = e;
-        })
-        .pipe(streamz(function(d) {
-          max = d;
-        }));
+    valueStream()
+      .pipe(streamz((d,cb) => {
+        if (d == 5) cb('EXCEPTION');
+        else cb(null,d);
+      }))
+      .on('error',e => err = e)
+      .pipe(streamz(d => max = d));
 
-        return Promise.delay(200)
-          .then(function() {
-            assert.equal(err,'EXCEPTION');
-            assert.equal(max,4);
-        });
-      });      
+    return Promise.delay(400)
+      .then(() => {
+        t.same(err,'EXCEPTION','emits error');
+        t.same(max,4,'stops');
+      });
   });
 
-  describe('as promise rejection',function() {
-    it('emits error and stops',function() {
-      var max,err;
+  t.test('as promise rejection',t => {
+    let max,err;
 
-      valueStream()
-        .pipe(streamz(function(d) {        
-          if (d == 5) return Promise.reject('EXCEPTION');
-          else return Promise.resolve(d);
-        }))
-        .pipe(streamz(function(d) {
-          max = d;
-        }))
-        .promise()
-        .then(null,function(e) {
-          err = e;
-        });
-        
-
-        return Promise.delay(200)
-          .then(function() {
-            assert.equal(err,'EXCEPTION');
-            assert.equal(max,4);
-        });
-      });      
+    valueStream()
+      .pipe(streamz(d => {
+        if (d == 5) return Promise.reject('EXCEPTION');
+        else return Promise.resolve(d);
+      }))
+      .pipe(streamz(d => max = d))
+      .promise()
+      .catch(e => err = e);
+    
+    return Promise.delay(400)
+      .then(() => {
+        t.same(err,'EXCEPTION','emits');
+        t.same(max,4,'stops');
+      });
   });
 
-  describe('error in component above',function() {
-    it('is captured',function() {
-      fs.createReadStream('this_file_does_not_exists')
-        .pipe(streamz())
-        .promise()
-        .then(function() {
-          throw 'Should Error';
-        },function(e) {
-          assert.equal(e.code,'ENOENT');
-        });
-    });
+  t.test('error in component above',t => {
+    return fs.createReadStream('this_file_does_not_exists')
+      .pipe(streamz())
+      .promise()
+      .then(
+        () => {throw 'Should Error';},
+        e => t.same(e.code,'ENOENT','is captured')
+      );
   });
-
 });

@@ -44,6 +44,8 @@ function Streamz(_c, fn, options) {
   this._concurrent = 0;
   if (options.flush)
     this._flush = options.flush;
+  if (typeof options.catch === 'function')
+    this._catch = options.catch;
 
   this.on('error',e => {
     if (this._events.error.length < 2) {
@@ -66,6 +68,14 @@ util.inherits(Streamz,stream.Transform);
 Streamz.prototype.callbacks = undefined;
 
 Streamz.prototype._flush = function(cb) { setImmediate(cb);};
+
+Streamz.prototype.emitError = function(e) {
+  if (this._catch)
+    Promise.try(() => this._catch.call(this,e))
+      .catch(e => this.emit('error',e));
+  else
+    this.emit('error',e);
+};
 
 Streamz.prototype._transform = function(d, e, _cb) {
   let ret;
@@ -102,13 +112,13 @@ Streamz.prototype._transform = function(d, e, _cb) {
   try {
     ret = this._fn(d, (e, d) => {
       if (e)
-        this.emit('error',e);
+        this.emitError(e);
       else if (d !== undefined)
         this.push(d);
       vanillaCb();
     });
   } catch(e) {
-    this.emit('error',e);
+    this.emitError(e);
     vanillaCb();
   }
 
@@ -120,7 +130,7 @@ Streamz.prototype._transform = function(d, e, _cb) {
       if (d !== undefined)
         this.push(d);
     },e => {
-      this.emit('error',e);
+      this.emitError(e);
     })
     .then(done);
   } else {

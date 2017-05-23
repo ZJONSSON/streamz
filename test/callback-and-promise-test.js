@@ -1,7 +1,6 @@
-var streamz = require('../streamz');
-var Promise = require('bluebird');
-var inspect = require('./lib/inspect');
-var assert = require('assert');
+const streamz = require('../streamz');
+const Promise = require('bluebird');
+const t = require('tap');
 
 // Simulate a connection pool
 function getPool(poolSize,queryDelay) {
@@ -12,93 +11,74 @@ function getPool(poolSize,queryDelay) {
     
     getConnection : function() {
 
-      var next = function() {
+      const next = () => {
         if (this.available && this.queue.length) {
           this.available--;
           this.queue.shift().resolve();
         }
-      }
-      .bind(this);
+      };
 
-      var release = function() {
+      const release = () => {
         this.available++;
         next();
-      }
-      .bind(this);
-
+      };
     
-      var defer = Promise.defer();
+      const defer = Promise.defer();
       this.queue.push(defer);
 
       next();
 
       return defer.promise
-        .then(function() {
-          return {
-            query : Promise.delay(queryDelay),
-            release : release
-          };
-        });
+        .then(() => ({
+          query : Promise.delay(queryDelay),
+          release : release
+        }));
     }
   };
 }
 
-describe('callback and promise',function() {
-  var poolSize = 10,
-      items = 50,
-      queryDelay = 100;
+t.test('callback and promise',t => {
+  const poolSize = 10;
+  const items = 50;
+  const queryDelay = 100;
 
  
-  var input = streamz(),
-      end = streamz(),
-      pool = getPool(poolSize,queryDelay);
+  const input = streamz();
+  const end = streamz();
+  const pool = getPool(poolSize,queryDelay);
 
-  var i = items;
-  while(i--) input.write(i);
+  let i = items;
+  while(i--)
+    input.write(i);
   input.end();
 
-  var concurrent = 0,
-      maxConcurrent = 0;
+  let concurrent = 0;
+  let maxConcurrent = 0;
 
-  var main = streamz(function(d,cb) {
-    var self = this;
+  const main = streamz(function(d,cb) {
     maxConcurrent = Math.max(maxConcurrent,concurrent++);
     return pool.getConnection()
-      .then(function(connection) {
+      .then(connection => {
         cb(null,'callback'); // signal we have received connection
         return connection.query
-          .then(function() {
+          .then(() => {
             concurrent--;
             connection.release();
-            self.push('manual');
+            this.push('manual');
             return 'promise';
           });
       });
   });
 
-  input
+  return input
     .pipe(main)
-    .pipe(end);
-
-  var done = inspect(end);
-
-  it('maximum concurrency controlled by callbacks',function() {
-    return done.then(function() {
-      assert.equal(maxConcurrent,poolSize);
-    });
-  });
-
-  it('promise, manual push and callback values were pushed',function() {
-    return done.then(function(d) {
-      ['promise','callback','manual'].forEach(function(key) { 
-
-        var count = d.filter(function(d) {
-          return d == key;
-        }).length;
-
-        assert.equal(count,items);
+    .pipe(end)
+    .promise()
+    .then(d => {
+      t.same(maxConcurrent,poolSize,'max concurrency controlled by callbacks');
+      ['promise','callback','manual'].forEach(key => {
+        const count = d.filter(d => d === key).length;
+        t.same(count,items,`${key} values pushed`);
       });
-      
     });
-  });
 });

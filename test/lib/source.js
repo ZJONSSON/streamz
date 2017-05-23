@@ -1,17 +1,15 @@
-var PassThrough = require('stream').PassThrough;
+const Promise = require('bluebird');
+const PassThrough = require('stream').PassThrough;
 
 module.exports = function(values,delay,initDelay) {
   delay = delay || 10;
   initDelay = initDelay || 0;
-  values = [].concat(values || [1,2,3,4,5,6,7,8,9]);
+  values = [].concat(values || [1,2,3,4,5,6,7,8,9]).concat(null);
   
-  var p = PassThrough({objectMode:true});
-  values.forEach(function(d,i) {
-    setTimeout(function() {
-      p.write(d);
-      if (i == values.length-1)
-        p.end();
-    },i*delay+initDelay);
-  });
+  const p = PassThrough({objectMode:true});
+  Promise.delay(initDelay, Promise.mapSeries(values,d => {
+    return Promise.delay(delay).then(() => p.push(d));
+  }));
+    
   return p;
 };

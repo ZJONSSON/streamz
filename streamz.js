@@ -1,12 +1,12 @@
-var stream = require('stream'),
-    Promise = require('bluebird'),
-    util = require('util');
+const stream = require('stream');
+const Promise = require('bluebird');
+const util = require('util');
 
-function noop() {}
+const noop = () => undefined;
 
-function Streamz(_c,fn,options) {
+function Streamz(_c, fn, options) {
   if (!(this instanceof Streamz))
-    return new Streamz(_c,fn,options);
+    return new Streamz(_c, fn, options);
 
   if (isNaN(_c)) {
     options = fn;
@@ -44,23 +44,20 @@ function Streamz(_c,fn,options) {
   this._concurrent = 0;
   if (options.flush)
     this._flush = options.flush;
+  if (typeof options.catch === 'function')
+    this._catch = options.catch;
 
-  this.on('error',function(e) {
+  this.on('error',e => {
     if (this._events.error.length < 2) {
-      var pipes = this._readableState.pipes;
-      if (pipes) [].concat(pipes).forEach(function(child) {
-          child.emit('error',e);
-        });
+      const pipes = this._readableState.pipes;
+      if (pipes) [].concat(pipes).forEach(child => child.emit('error', e));
       else throw e;
     }
   });
 
-  this.on('pipe',function(p) {
-    var self = this;
+  this.on('pipe',p => {
     if (!(p instanceof Streamz) && (!p._events.error || !p._events.error.length || p._events.error.length === 1))
-      p.on('error',function(e) {
-        self.emit('error',e);
-      });
+      p.on('error',e => this.emit('error', e));
 
     this._incomingPipes++;
   });
@@ -72,9 +69,16 @@ Streamz.prototype.callbacks = undefined;
 
 Streamz.prototype._flush = function(cb) { setImmediate(cb);};
 
-Streamz.prototype._transform = function(d,e,_cb) {
-  var self = this,
-      ret;
+Streamz.prototype.emitError = function(e) {
+  if (this._catch)
+    Promise.try(() => this._catch.call(this,e))
+      .catch(e => this.emit('error',e));
+  else
+    this.emit('error',e);
+};
+
+Streamz.prototype._transform = function(d, e, _cb) {
+  let ret;
 
   this._concurrent+=1;
 
@@ -85,36 +89,36 @@ Streamz.prototype._transform = function(d,e,_cb) {
   else
     this.callbacks = (this.callbacks || []).concat(_cb);
 
-  var pop = function() {
+  let pop = () => {
     pop = noop;
-    if (self.callbacks && self.callbacks.length)
-      self.callbacks.shift()();
+    if (this.callbacks && this.callbacks.length)
+      this.callbacks.shift()();
   };
 
-  var done = function() {
+  let done = () => {
     // Ensure done is only called once
     done = noop;
-    self._concurrent--;
+    this._concurrent--;
     pop();
-    self._finalize();
+    this._finalize();
   };
 
   // If the return value is not a promise then vanillaCb = `done`
   // If a promise is returned, we switch the reference to the
   // original stream callback and only execute `done` when the
   // promise has been resolved
-  var vanillaCb = done;
+  let vanillaCb = done;
   
   try {
-    ret = this._fn(d,function(e,d) {
+    ret = this._fn(d, (e, d) => {
       if (e)
-        self.emit('error',e);
+        this.emitError(e);
       else if (d !== undefined)
-        self.push(d);
+        this.push(d);
       vanillaCb();
     });
   } catch(e) {
-    self.emit('error',e);
+    this.emitError(e);
     vanillaCb();
   }
 
@@ -122,17 +126,17 @@ Streamz.prototype._transform = function(d,e,_cb) {
     // switch reference to the original stream callback
     // and only call done when the promise is resolved
     vanillaCb = pop;
-    ret.then(function(d) {
+    ret.then(d => {
       if (d !== undefined)
-        self.push(d);
-    },function(e) {
-      self.emit('error',e);
+        this.push(d);
+    },e => {
+      this.emitError(e);
     })
     .then(done);
   } else {
     // If we got non-promise value, we push it
     if (ret !== undefined)
-      self.push(ret);
+      this.push(ret);
 
     // If the fn was synchronous we signal we are done
     if (this._fn.length < 2)
@@ -150,29 +154,26 @@ Streamz.prototype._finalize = noop;
 Streamz.prototype.end = function(d) {
   this._incomingPipes--;
   if (d !== undefined)
-    this._transform(d,null,noop);
+    this._transform(d, null, noop);
   if (this._incomingPipes < 1) {
-    this._finalize = function() {
+    this._finalize = () => {
       if (!this._concurrent && !this._writableState.length)
-        stream.Transform.prototype.end.apply(this,arguments);
-    }.bind(this);
+        stream.Transform.prototype.end.apply(this, arguments);
+    };
     this._finalize();
   }
 };
 
 Streamz.prototype.promise = function() {
-  var self = this,
-      buffer=[],
-      bufferStream = Streamz(function(d) {
-        buffer.push(d);
-      });
-
-  return new Promise(function(resolve,reject) {
-    self.pipe(bufferStream)
-      .on('error',reject)
-      .on('finish',function() {
-        resolve(buffer);
-      });
+  const buffer = [];
+  const bufferStream = Streamz(d => {
+    buffer.push(d);
+  });
+        
+  return new Promise((resolve,reject) => {
+    this.pipe(bufferStream)
+      .on('error', reject)
+      .on('finish', () => resolve(buffer));
   });
 };
 

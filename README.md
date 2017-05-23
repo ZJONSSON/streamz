@@ -32,6 +32,18 @@ Concurrency can also be defined through the alternative function signature, wher
 
 If you specify the option `keepAlive: true`, the `streamz` object will need an extra `.end()` to close.   This prevents accidental closing when piping multiple streams with uncertain timings (including periods of no open streams) into a `streamz` object.
 
+You can also specify a `catch` handler in options that is going to catch any errors from the user-supplied-function.  If the handler errors as well (or returns a Promise rejection) the error will be emitted.  If the handler does not error the stream will continue as if no error occured.   This makes it easy to silence errors or put retry mechanisms in place without having to wrap everything within try-catch (especially when dealing with `async` functions)
+
+Example of silencing errors from `await` inside the function
+
+```
+  .pipe(streamz(async function(url) {
+    return await requestAsync(url);
+  },{
+  	catch: e => console.log('error fetching url');
+  }))
+```
+
 Streamz supports `self.writes`, i.e. if you `this.write(data)` within the custom function, the data will be processed by the streamz component (recursively) even if the inbound stream has ended.  This can be useful for scrapers that need to traverse through pages etc.
 
 As with vanilla node streams, a custom [`_flush()`](http://nodejs.org/api/stream.html#stream_transform_flush_callback) function can be defined to handle any remaining buffers after all written data has been consumed.  The flush can be defined on the fly with `flush` property in options.

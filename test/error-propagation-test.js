@@ -1,72 +1,48 @@
-var streamz = require('../streamz'),
-    Promise = require('bluebird'),
-    assert = require('assert');
+const streamz = require('../streamz');
+const Promise = require('bluebird');
+const valueStream = require('./lib/source');
+const t = require('tap');
 
-var values = [1,2,3,4,5,6,7,8,9];
+t.test('error propagation',{autoend:true, jobs: 2}, t => {
 
-var valueStream = function() {
-  var s = require('stream').PassThrough({objectMode:true});
-  values.forEach(function(d,i) {
-    setTimeout(function() {
-      s.write(d);
-      if (i == values.length -1)
-        s.end();
-    },i*1);
-  });
-  return s;
-};
+  t.test('next handler',t => {
+    let max,err;
 
-describe('error propagation',function() {
-
- it('handled by next handler',function() {
-  var max,err;
-
-  valueStream()
-    .pipe(streamz(function(d) {        
-      if (d == 5) return Promise.reject('EXCEPTION');
-      else return d;
-    }))
-    .pipe(streamz(function(d) {
-      max = d;
-    }))
-    .pipe(streamz())
-    .pipe(streamz())
-    .on('error',function(e) {
-      err = e;
-    })
-    .pipe(streamz())
-    .on('error',function() {
-      err = 'should not be picked up here';
-    });
-  
+    valueStream()
+      .pipe(streamz(d => {
+        if (d == 5) return Promise.reject('EXCEPTION');
+        else return d;
+      }))
+      .pipe(streamz(d => max = d))
+      .pipe(streamz())
+      .pipe(streamz())
+      .on('error',e => err = e)
+      .pipe(streamz())
+      .on('error',() => err = 'should not be picked up here');
+    
     return Promise.delay(200)
-      .then(function() {
-        assert.equal(err,'EXCEPTION');
-        assert.equal(max,4);
-    });
+      .then(() => {
+        t.same(err,'EXCEPTION','picks up error');
+        t.same(max,4,'stops stream');
+      });
   });
 
-
-  it('handled by promise rejection',function() {
-    var max,err;
+  t.test('promise rejection',t => {
+    let max,err;
 
     return valueStream()
-      .pipe(streamz(function(d) {        
+      .pipe(streamz(d => {
         if (d == 5) return Promise.reject('EXCEPTION');
         else return Promise.resolve(d);
       }))
-      .pipe(streamz(function(d) {
-        max = d;
-      }))
+      .pipe(streamz(d => max = d))
       .pipe(streamz())
       .pipe(streamz())
       .promise()
-      .catch(function(e) {
-        err = e;
-      })  
-      .then(function() {
-        assert.equal(err,'EXCEPTION');
-        assert.equal(max,4);
+      .catch(e => err = e)
+      .then(() => {
+        t.same(err,'EXCEPTION','picks up error');
+        t.same(max,4,'stops stream');
       });
   });
 });

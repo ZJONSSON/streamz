@@ -107,6 +107,16 @@ t.test('error', {autoend:true, jobs: 10}, t => {
         e => t.same(e.code,'ENOENT','is captured')
       );
   });
+
+  t.test('error without any child pipes', t => {
+    try {
+      streamz().emit('error','this is an error');
+    }
+    catch(e) {
+      t.equal(e,'this is an error','throws');
+      t.end();
+    }
+  });
 });
 
 t.test('catch', {autoend:true, jobs: 10}, t => {

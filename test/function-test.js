@@ -61,7 +61,6 @@ t.test('function',{autoend:true,jobs:10}, t => {
     return test(streamz(fn),4,t,'processes data');
   });
 
-
   t.test('write after stream ended',t => {
     const s = streamz(function(d) {
       if (d === 8 || d === 9)
@@ -100,4 +99,17 @@ t.test('function',{autoend:true,jobs:10}, t => {
     };
     return test(streamz(fn),4,t,'processes data');
   });
+
+  t.test('with `fn` defined in options', t => {
+    return test(streamz({fn : d => d*2}),2,t,'processes data');
+  });
+
+  t.test('.end() called with value', t => {
+    const s = streamz();
+    s.write(1);
+    s.write(2);
+    s.end(3);
+    return s.promise().then(d => t.same(d,[1,2,3],'is pushed down'));
+  });
+
 });

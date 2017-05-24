@@ -151,14 +151,14 @@ Streamz.prototype._fn = function(d) {
 
 Streamz.prototype._finalize = noop;
 
-Streamz.prototype.end = function(d) {
+Streamz.prototype.end = function(d,cb) {
   this._incomingPipes--;
   if (d !== undefined)
     this._transform(d, null, noop);
   if (this._incomingPipes < 1) {
     this._finalize = () => {
       if (!this._concurrent && !this._writableState.length)
-        stream.Transform.prototype.end.apply(this, arguments);
+        stream.Transform.prototype.end.apply(this, undefined, cb);
     };
     this._finalize();
   }

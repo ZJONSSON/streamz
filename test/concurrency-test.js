@@ -45,6 +45,17 @@ t.test('concurrency',{autoend: true, jobs: 10}, t => {
       });
   });
 
+  t.test('pipe ended stream into streamz(fn,{concurrency:5})',t => {
+    const s = streamz(Object,{concurrency:5});
+    s.write({value:true});
+    s.end();
+
+    return s.promise()
+      .then(d => {
+        t.same(d,[{value: true}],'returns correct output');
+      });
+  });
+
   t.test('legacy: streamz(fn,5)',t => {
     const s = streamz(delayDouble,5);
 

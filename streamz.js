@@ -100,7 +100,7 @@ Streamz.prototype._transform = function(d, e, _cb) {
     done = noop;
     this._concurrent--;
     pop();
-    this._finalize();
+    setImmediate( () => this._finalize());
   };
 
   // If the return value is not a promise then vanillaCb = `done`

@@ -40,6 +40,7 @@ function Streamz(_c, fn, options) {
   else if (options.fn)
     this._fn = options.fn;
 
+  this.maxTickTime = options.maxTickTime;
   this._incomingPipes = (options.keepAlive ? 1 : 0);
   this._concurrent = 0;
   if (options.flush)
@@ -82,10 +83,19 @@ Streamz.prototype._transform = function(d, e, _cb) {
 
   this._concurrent+=1;
 
+  if (this.maxTickTime) {
+    let cb = _cb;
+    _cb = (e,d) => {
+      let time = process.hrtime();
+      setImmediate(() => process.hrtime(time)[1]/1000000 > this.maxTickTime ? _cb(e,d) : cb(e,d));
+    };
+  }
+
   // If we haven't reached the concurrency limit, we schedule
   // a callback to the transform stream at the next tick
-  if (this._concurrent < this._concurrency)
+  if (this._concurrent < this._concurrency) {    
     setImmediate(_cb);
+  }
   else
     this.callbacks = (this.callbacks || []).concat(_cb);
 

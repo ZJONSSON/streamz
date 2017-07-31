@@ -45,6 +45,20 @@ t.test('concurrency',{autoend: true, jobs: 10}, t => {
       });
   });
 
+  t.test('streamz(fn,{concurrency:fn})',t => {
+    let concurrency = () => 3;
+    const s = streamz(delayDouble,{concurrency:concurrency});
+
+    return source(values)
+      .pipe(s)
+      .promise()
+      .then(d => {
+        t.same(sum(d),sum(values,2),'returns correct output');
+        t.same(s.maxConcurrent,3,'has max 12 concurrent');
+        t.same(s.startConcurrent,3,'starts with 12 concurrent');
+      });
+  });
+
   t.test('pipe ended stream into streamz(fn,{concurrency:5})',t => {
     const s = streamz(Object,{concurrency:5});
     s.write({value:true});

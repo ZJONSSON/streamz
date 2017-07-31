@@ -84,7 +84,9 @@ Streamz.prototype._transform = function(d, e, _cb) {
 
   // If we haven't reached the concurrency limit, we schedule
   // a callback to the transform stream at the next tick
-  if (this._concurrent < this._concurrency)
+  let concurrency = this._concurrency;
+  if (typeof concurrency === 'function') concurrency = concurrency();
+  if (this._concurrent < concurrency)
     setImmediate(_cb);
   else
     this.callbacks = (this.callbacks || []).concat(_cb);

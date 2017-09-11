@@ -203,14 +203,15 @@ t.test('catch', {autoend:true, jobs: 10}, t => {
   });
 
   t.test('ignoring the error',t => {
-    let max,err,caughtErr;
+    let max,err,caughtErr,caughtData;
 
     valueStream()
       .pipe(streamz(d => {
         if (d == 5) throw 'EXCEPTION';
         else return d;  
-      },{catch: e => {
+      },{catch: (e,d) => {
         caughtErr = e;
+        caughtData = d;
       }}))
       .on('error',e => err = e)
       .pipe(streamz(d => max = d));
@@ -218,6 +219,7 @@ t.test('catch', {autoend:true, jobs: 10}, t => {
     return Promise.delay(400)
       .then(() => {
         t.same(caughtErr,'EXCEPTION','The error is caught');
+        t.same(caughtData,5);
         t.same(err,undefined,'Error is not emitted');
         t.same(max,9,'does not stop the stream');
       });

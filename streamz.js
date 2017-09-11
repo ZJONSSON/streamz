@@ -69,9 +69,9 @@ Streamz.prototype.callbacks = undefined;
 
 Streamz.prototype._flush = function(cb) { setImmediate(cb);};
 
-Streamz.prototype.emitError = function(e) {
+Streamz.prototype.emitError = function(e,d) {
   if (this._catch)
-    Promise.try(() => this._catch.call(this,e))
+    Promise.try(() => this._catch.call(this,e,d))
       .catch(e => this.emit('error',e));
   else
     this.emit('error',e);
@@ -114,13 +114,13 @@ Streamz.prototype._transform = function(d, e, _cb) {
   try {
     ret = this._fn(d, (e, d) => {
       if (e)
-        this.emitError(e);
+        this.emitError(e,d);
       else if (d !== undefined)
         this.push(d);
       vanillaCb();
     });
   } catch(e) {
-    this.emitError(e);
+    this.emitError(e,d);
     vanillaCb();
   }
 
@@ -132,7 +132,7 @@ Streamz.prototype._transform = function(d, e, _cb) {
       if (d !== undefined)
         this.push(d);
     },e => {
-      this.emitError(e);
+      this.emitError(e,d);
     })
     .then(done);
   } else {

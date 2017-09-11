@@ -32,7 +32,7 @@ Concurrency can also be defined through the alternative function signature, wher
 
 If you specify the option `keepAlive: true`, the `streamz` object will need an extra `.end()` to close.   This prevents accidental closing when piping multiple streams with uncertain timings (including periods of no open streams) into a `streamz` object.
 
-You can also specify a `catch` handler in options that is going to catch any errors from the user-supplied-function.  If the handler errors as well (or returns a Promise rejection) the error will be emitted.  If the handler does not error the stream will continue as if no error occured.   This makes it easy to silence errors or put retry mechanisms in place without having to wrap everything within try-catch (especially when dealing with `async` functions)
+You can also specify a `catch` handler in options that is going to catch any errors from the user-supplied-function.  If the handler errors as well (or returns a Promise rejection) the error will be emitted.  If the handler does not error the stream will continue as if no error occured.   This makes it easy to silence errors or put retry mechanisms in place without having to wrap everything within try-catch (especially when dealing with `async` functions).  In addition to receiving the error, the catch handler receives the data that caused the error as a second argument.
 
 Example of silencing errors from `await` inside the function
 
@@ -40,7 +40,7 @@ Example of silencing errors from `await` inside the function
   .pipe(streamz(async function(url) {
     return await requestAsync(url);
   },{
-  	catch: e => console.log('error fetching url');
+  	catch: (e,url) => console.log(`error ${e.message} fetching url ${url}`);
   }))
 ```
 

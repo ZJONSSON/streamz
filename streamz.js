@@ -26,6 +26,7 @@ function Streamz(_c, fn, options) {
   }
 
   options = options || {};
+  this.options = options;
   options.objectMode = true;
 
   if (options.highWaterMark === undefined) 

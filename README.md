@@ -66,3 +66,10 @@ streamz(function(d) {
 Any errors that come up in a streamz object are passed to the children if no custom error listener has been defined.  This allows errors to propagate down to the first error listener or to the rejection of a final promise (if the chain ends in `.promise()`)
 
 A chain that ends with `.promise()` returns a promise that collects any data passed down in an array and resolves when the stream is `finished` or is rejected if any uncaught error occured.   If no data is passed down to the end, the promise simply resolves to an empty array.
+
+Optionally a `maxBuffer` option can prevent the array size from growing out of bounds. If stream data type is `Object`, maxBuffer will limit number of objects, rather than the underlying byteLength.
+
+Example of promise with 4mb buffer size limit
+```js
+streamz(fn, {maxBuffer:41943040}).promise();
+```

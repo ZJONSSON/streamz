@@ -1,10 +1,8 @@
-const stream = require('stream');
+const {Transform } = require('stream');
 const Promise = require('bluebird');
-const util = require('util');
-
 const noop = () => undefined;
 
-class Streamz extends stream.Transform {
+class Streamz extends Transform {
   constructor(_c, fn, options) {
     super(options || fn || _c);
     if (isNaN(_c)) {
@@ -33,7 +31,7 @@ class Streamz extends stream.Transform {
     if (options.highWaterMark === undefined) 
       options.highWaterMark = 10;
 
-    stream.Transform.call(this,options);
+    Transform.call(this,options);
 
     this._concurrency = _c || options.concurrency || options.cap || 1;
 
@@ -67,134 +65,127 @@ class Streamz extends stream.Transform {
       this._incomingPipes++;
     });
   }
-}
 
-
-
-Streamz.prototype.callbacks = undefined;
-
-
-Streamz.prototype.emitError = function(e,d) {
-  if (this._catch)
-    Promise.try(() => this._catch.call(this,e,d))
-      .catch(e => this.emit('error',e));
-  else
-    this.emit('error',e);
-};
-
-Streamz.prototype._transform = function(d, e, _cb) {
-  let ret;
-
-  this._concurrent+=1;
-
-  // If we haven't reached the concurrency limit, we schedule
-  // a callback to the transform stream at the next tick
-  let concurrency = this._concurrency;
-  if (typeof concurrency === 'function') concurrency = concurrency();
-  if (this._concurrent < concurrency)
-    setImmediate(_cb);
-  else
-    this.callbacks = (this.callbacks || []).concat(_cb);
-
-  let pop = () => {
-    pop = noop;
-    if (this.callbacks && this.callbacks.length)
-      this.callbacks.shift()();
-  };
-
-  let done = () => {
-    // Ensure done is only called once
-    done = noop;
-    this._concurrent--;
-    pop();
-    setImmediate( () => this._finalize());
-  };
-
-  // If the return value is not a promise then vanillaCb = `done`
-  // If a promise is returned, we switch the reference to the
-  // original stream callback and only execute `done` when the
-  // promise has been resolved
-  let vanillaCb = done;
-  
-  try {
-    ret = this._fn(d, (e, d) => {
-      if (e)
-        this.emitError(e,d);
-      else if (d !== undefined)
-        this.push(d);
-      vanillaCb();
-    });
-  } catch(e) {
-    this.emitError(e,d);
-    vanillaCb();
+  emitError(e,d) {
+    if (this._catch)
+      Promise.try(() => this._catch.call(this,e,d))
+        .catch(e => this.emit('error',e));
+    else
+      this.emit('error',e);
   }
 
-  if (ret && typeof ret.then === 'function') {
-    // switch reference to the original stream callback
-    // and only call done when the promise is resolved
-    vanillaCb = pop;
-    ret.then(d => {
-      if (d !== undefined)
-        this.push(d);
-    },e => {
-      this.emitError(e,d);
-    })
-    .then(done);
-  } else {
-    // If we got non-promise value, we push it
-    if (ret !== undefined)
-      this.push(ret);
+  _transform(d, e, _cb) {
+    let ret;
 
-    // If the fn was synchronous we signal we are done
-    if (this._fn.length < 2)
-      vanillaCb();
-  }
-};
+    this._concurrent+=1;
 
-Streamz.prototype._fn = function(d) {
-  // The default is a simple passthrough. 
-  this.push(d);
-};
+    // If we haven't reached the concurrency limit, we schedule
+    // a callback to the transform stream at the next tick
+    let concurrency = this._concurrency;
+    if (typeof concurrency === 'function') concurrency = concurrency();
+    if (this._concurrent < concurrency)
+      setImmediate(_cb);
+    else
+      this.callbacks = (this.callbacks || []).concat(_cb);
 
-Streamz.prototype._finalize = noop;
-
-Streamz.prototype.end = function(d,cb) {
-  this._incomingPipes--;
-  if (d !== undefined)
-    this._transform(d, null, noop);
-  if (this._incomingPipes < 1) {
-    this._finalize = () => {
-      if (!this._concurrent && !this._writableState.length)
-        stream.Transform.prototype.end.apply(this, undefined, cb);
+    let pop = () => {
+      pop = noop;
+      if (this.callbacks && this.callbacks.length)
+        this.callbacks.shift()();
     };
-    this._finalize();
-  }
-};
 
-Streamz.prototype.promise = function() {
-  let size = 0;
-  const buffer = [];
-  const bufferStream = new Streamz(d => {
-    if (this.options.maxBuffer) {
-      size += (d && d.length) || 1;
-      if (size > this.options.maxBuffer) {
-        this.emitError(new Error('max buffer size reached'));
-        return;
-      }
+    let done = () => {
+      // Ensure done is only called once
+      done = noop;
+      this._concurrent--;
+      pop();
+      setImmediate( () => this._finalize());
+    };
+
+    // If the return value is not a promise then vanillaCb = `done`
+    // If a promise is returned, we switch the reference to the
+    // original stream callback and only execute `done` when the
+    // promise has been resolved
+    let vanillaCb = done;
+    
+    try {
+      ret = this._fn(d, (e, d) => {
+        if (e)
+          this.emitError(e,d);
+        else if (d !== undefined)
+          this.push(d);
+        vanillaCb();
+      });
+    } catch(e) {
+      this.emitError(e,d);
+      vanillaCb();
     }
-    buffer.push(d);
-  });
-        
-  return new Promise((resolve,reject) => {
-    this.pipe(bufferStream)
-      .on('error', reject)
-      .on('finish', () => resolve(buffer));
-  });
-};
+
+    if (ret && typeof ret.then === 'function') {
+      // switch reference to the original stream callback
+      // and only call done when the promise is resolved
+      vanillaCb = pop;
+      ret.then(d => {
+        if (d !== undefined)
+          this.push(d);
+      },e => {
+        this.emitError(e,d);
+      })
+      .then(done);
+    } else {
+      // If we got non-promise value, we push it
+      if (ret !== undefined)
+        this.push(ret);
+
+      // If the fn was synchronous we signal we are done
+      if (this._fn.length < 2)
+        vanillaCb();
+    }
+  }
+
+  _fn(d) {
+    // The default is a simple passthrough. 
+    this.push(d);
+  }
+
+  _finalize() {
+  }
+
+  end(d,cb) {
+    this._incomingPipes--;
+    if (d !== undefined)
+      this._transform(d, null, noop);
+    if (this._incomingPipes < 1) {
+      this._finalize = () => {
+        if (!this._concurrent && !this._writableState.length)
+          Transform.prototype.end.apply(this, undefined, cb);
+      };
+      this._finalize();
+    }
+  }
+
+  promise() {
+    let size = 0;
+    const buffer = [];
+    const bufferStream = new Streamz(d => {
+      if (this.options.maxBuffer) {
+        size += (d && d.length) || 1;
+        if (size > this.options.maxBuffer) {
+          this.emitError(new Error('max buffer size reached'));
+          return;
+        }
+      }
+      buffer.push(d);
+    });
+          
+    return new Promise((resolve,reject) => {
+      this.pipe(bufferStream)
+        .on('error', reject)
+        .on('finish', () => resolve(buffer));
+    });
+  }
+}
 
 module.exports = function(_c, fn, options) {
-
-  
   return new Streamz(_c, fn, options);
-
-}
+};

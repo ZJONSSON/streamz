@@ -67,7 +67,7 @@ Any errors that come up in a streamz object are passed to the children if no cus
 
 A chain that ends with `.promise()` returns a promise that collects any data passed down in an array and resolves when the stream is `finished` or is rejected if any uncaught error occured.   If no data is passed down to the end, the promise simply resolves to an empty array.
 
-Optionally a `maxBuffer` option can prevent the array size from growing out of bounds. If stream data type is `Object`, maxBuffer will limit number of objects, rather than the underlying byteLength.
+Optionally a `maxBuffer` option can prevent the array size from growing out of bounds. If stream data type is an `Object` or `Array` of objects, maxBuffer will limit number of objects, rather than the underlying byteLength.
 
 Example of promise with 4mb buffer size limit
 ```js

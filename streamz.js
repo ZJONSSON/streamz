@@ -4,71 +4,75 @@ const util = require('util');
 
 const noop = () => undefined;
 
-function Streamz(_c, fn, options) {
-  if (!(this instanceof Streamz))
-    return new Streamz(_c, fn, options);
-
-  if (isNaN(_c)) {
-    options = fn;
-    fn = _c;
-    _c = undefined;
-  }
-
-  if (typeof fn !== 'function') {
-    options = fn;
-    fn = undefined;
-  }
-
-  // Legacy way to define concurrency
-  if (!_c && options && !isNaN(options)) {
-    _c = options;
-    options = undefined;
-  }
-
-  options = options || {};
-  this.options = options;
-  options.objectMode = true;
-
-  if (options.highWaterMark === undefined) 
-    options.highWaterMark = 10;
-
-  stream.Transform.call(this,options);
-
-  this._concurrency = _c || options.concurrency || options.cap || 1;
-
-  if (fn)
-    this._fn = fn;
-  else if (options.fn)
-    this._fn = options.fn;
-
-  this._incomingPipes = (options.keepAlive ? 1 : 0);
-  this._concurrent = 0;
-  if (options.flush)
-    this._flush = options.flush;
-  if (typeof options.catch === 'function')
-    this._catch = options.catch;
-
-  this.on('error',e => {
-    if (this._events.error.length < 2) {
-      const pipes = this._readableState.pipes;
-      if (pipes) [].concat(pipes).forEach(child => child.emit('error', e));
-      else throw e;
+class Streamz extends stream.Transform {
+  constructor(_c, fn, options) {
+    super(options || fn || _c);
+    if (isNaN(_c)) {
+      options = fn;
+      fn = _c;
+      _c = undefined;
     }
-  });
 
-  this.on('pipe',p => {
-    if (!(p instanceof Streamz) && (!p._events.error || !p._events.error.length || p._events.error.length === 1))
-      p.on('error',e => this.emit('error', e));
+    if (typeof fn !== 'function') {
+      options = fn;
+      fn = undefined;
+    }
 
-    this._incomingPipes++;
-  });
+    // Legacy way to define concurrency
+    if (!_c && options && !isNaN(options)) {
+      _c = options;
+      options = undefined;
+    }
+    options = options || {};
+    if (!isNaN(_c)) options.concurrency = _c;
+  
+    options = options || {};
+    this.options = options;
+    options.objectMode = true;
+
+    if (options.highWaterMark === undefined) 
+      options.highWaterMark = 10;
+
+    stream.Transform.call(this,options);
+
+    this._concurrency = _c || options.concurrency || options.cap || 1;
+
+    if (fn)
+      this._fn = fn;
+    else if (options.fn)
+      this._fn = options.fn;
+
+    this._incomingPipes = (options.keepAlive ? 1 : 0);
+    this._concurrent = 0;
+    if (options.flush)
+      this._flush = (cb) => {
+        this._flush = noop;
+        options.flush.call(this,() => setImmediate(cb));
+      };
+    if (typeof options.catch === 'function')
+      this._catch = options.catch;
+
+    this.on('error',e => {
+      if (this._events.error.length < 2) {
+        const pipes = this._readableState.pipes;
+        if (pipes) [].concat(pipes).forEach(child => child.emit('error', e));
+        else throw e;
+      }
+    });
+
+    this.on('pipe',p => {
+      if (!(p instanceof Streamz) && (!p._events.error || !p._events.error.length || p._events.error.length === 1))
+        p.on('error',e => this.emit('error', e));
+
+      this._incomingPipes++;
+    });
+  }
 }
 
-util.inherits(Streamz,stream.Transform);
+
 
 Streamz.prototype.callbacks = undefined;
 
-Streamz.prototype._flush = function(cb) { setImmediate(cb);};
 
 Streamz.prototype.emitError = function(e,d) {
   if (this._catch)
@@ -170,7 +174,7 @@ Streamz.prototype.end = function(d,cb) {
 Streamz.prototype.promise = function() {
   let size = 0;
   const buffer = [];
-  const bufferStream = Streamz(d => {
+  const bufferStream = new Streamz(d => {
     if (this.options.maxBuffer) {
       size += (d && d.length) || 1;
       if (size > this.options.maxBuffer) {
@@ -188,4 +192,9 @@ Streamz.prototype.promise = function() {
   });
 };
 
-module.exports = Streamz;
+module.exports = function(_c, fn, options) {
+
+  
+  return new Streamz(_c, fn, options);
+
+}

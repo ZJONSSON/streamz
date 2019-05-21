@@ -10,6 +10,7 @@
     "test": "tap test --jobs=10 -Rspec --coverage-report=html --no-browser"
   },
   "author": "Ziggy Jonsson (http://github.com/zjonsson/)",
+  "types": "./streamz.d.ts",
   "repository": {
     "type": "git",
     "url": "http://github.com/ZJONSSON/streamz"
@@ -20,6 +21,7 @@
     "bluebird": "~3.5.0"
   },
   "devDependencies": {
+    "@types/node": "^12.0.2",
     "tap": "^10.3.2"
   }
 }

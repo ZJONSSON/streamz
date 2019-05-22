@@ -1,4 +1,4 @@
-const streamz = require('../streamz');
+const Streamz = require('../streamz');
 const t = require('tap');
 const valueStream = require('./lib/source');
 
@@ -14,14 +14,14 @@ const mdBufferValue = Buffer.from(mdArrayValue);
 const lgBufferValue = Buffer.from(lgArrayValue);
 
 const testSuccess = (t,val) => valueStream(val)
-  .pipe(streamz({maxBuffer}))
+  .pipe(new Streamz(null, {maxBuffer}))
   .promise()
   .then(d => t.same(d, [].concat(val)));
 
 const testRejection = (t,val) => {
   let err;
   return valueStream(val)
-    .pipe(streamz({maxBuffer}))
+    .pipe(new Streamz(null, {maxBuffer}))
     .promise()
     .catch(e => err = e)
     .then(() => {

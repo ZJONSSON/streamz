@@ -1,4 +1,4 @@
-const streamz = require('../streamz');
+const Streamz = require('../streamz');
 const Promise = require('bluebird');
 const t = require('tap');
 
@@ -43,8 +43,8 @@ t.test('callback and promise',t => {
   const queryDelay = 100;
 
  
-  const input = streamz();
-  const end = streamz();
+  const input = new Streamz();
+  const end = new Streamz();
   const pool = getPool(poolSize,queryDelay);
 
   let i = items;
@@ -55,7 +55,7 @@ t.test('callback and promise',t => {
   let concurrent = 0;
   let maxConcurrent = 0;
 
-  const main = streamz(function(d,cb) {
+  const main = new Streamz(function(d,cb) {
     maxConcurrent = Math.max(maxConcurrent,concurrent++);
     return pool.getConnection()
       .then(connection => {

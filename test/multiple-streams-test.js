@@ -1,4 +1,4 @@
-const streamz = require('../streamz');
+const Streamz = require('../streamz');
 const Promise = require('bluebird');
 const source = require('./lib/source');
 const t = require('tap');
@@ -6,6 +6,15 @@ const t = require('tap');
 const values = [1,2,3,4,5,6,7,8,9];
 
 const sum = (d,m) => d.reduce((p,d)  => p+d * (m ||1),0);
+
+class StreamzChecker extends Streamz {
+  constructor(fn, options) {
+    super(fn,options);
+    this.maxConcurrent = 0;
+    this.startConcurrent = 0;
+    this._incomingPipes = 0;
+  }
+}
 
 // Simple function that doubles incoming numbers
 // and pushes them down after a random delay
@@ -19,12 +28,12 @@ function delayDouble(d) {
 }
 
 t.test('multiple pipes (3)',t => {
-  const s = streamz(3,delayDouble);
+  const s = new StreamzChecker(delayDouble, {concurrency: 3});
   source(values,1).pipe(s);
   source(values,6).pipe(s);    
   setTimeout(() => source(values,4).pipe(s),5);
 
-  return s.pipe(streamz()).promise()
+  return s.pipe(new StreamzChecker()).promise()
     .then(d => {
       t.same(sum(d),sum(values,2)*3,'sum is correct');
       t.same(s.maxConcurrent,3,'maxConccurent is 3');

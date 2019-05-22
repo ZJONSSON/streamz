@@ -1,7 +1,15 @@
-const streamz = require('../streamz');
+const Streamz = require('../streamz');
 const Promise = require('bluebird');
 const source = require('./lib/source');
 const t = require('tap');
+
+class StreamzChecker extends Streamz {
+  constructor(fn, options) {
+    super(fn,options);
+    this.maxConcurrent = 0;
+    this.startConcurrent = 0;
+  }
+}
 
 const values =  [...Array(20)].map( (d,i) => i);
 const sum = (d,m) => d.reduce((p,d)  => p+d * (m ||1),0);
@@ -19,8 +27,8 @@ function delayDouble(d) {
 }
 
 t.test('concurrency',{autoend: true, jobs: 10}, t => {
-  t.test('streamz(5,fn)',t => {
-    const s = streamz(5,delayDouble);
+  t.test('new Streamz(5,fn)',t => {
+    const s = new StreamzChecker(delayDouble, {concurrency: 5});
 
     return source(values)
       .pipe(s)
@@ -32,8 +40,8 @@ t.test('concurrency',{autoend: true, jobs: 10}, t => {
       });
   });
 
-  t.test('streamz(fn,{concurrency:5})',t => {
-    const s = streamz(delayDouble,{concurrency:5});
+  t.test('new Streamz(fn,{concurrency:5})',t => {
+    const s = new StreamzChecker(delayDouble,{concurrency:5});
 
     return source(values)
       .pipe(s)
@@ -45,9 +53,9 @@ t.test('concurrency',{autoend: true, jobs: 10}, t => {
       });
   });
 
-  t.test('streamz(fn,{concurrency:fn})',t => {
+  t.test('new Streamz(fn,{concurrency:fn})',t => {
     let concurrency = () => 3;
-    const s = streamz(delayDouble,{concurrency:concurrency});
+    const s = new StreamzChecker(delayDouble,{concurrency:concurrency});
 
     return source(values)
       .pipe(s)
@@ -59,8 +67,8 @@ t.test('concurrency',{autoend: true, jobs: 10}, t => {
       });
   });
 
-  t.test('pipe ended stream into streamz(fn,{concurrency:5})',t => {
-    const s = streamz(Object,{concurrency:5});
+  t.test('pipe ended stream into new Streamz(fn,{concurrency:5})',t => {
+    const s = new StreamzChecker(Object,{concurrency:5});
     s.write({value:true});
     s.end();
 
@@ -70,21 +78,8 @@ t.test('concurrency',{autoend: true, jobs: 10}, t => {
       });
   });
 
-  t.test('legacy: streamz(fn,5)',t => {
-    const s = streamz(delayDouble,5);
-
-    return source(values)
-      .pipe(s)
-      .promise()
-      .then(d => {
-        t.same(sum(d),sum(values,2),'returns correct output');
-        t.same(s.maxConcurrent,5,'has max 5 concurrent');
-        t.same(s.startConcurrent,5,'starts with 5 concurrent');
-      });
-  });
-
   t.test('concurrency larger than data',t => {
-    const s = streamz(delayDouble,{concurrency:1000});
+    const s = new StreamzChecker(delayDouble,{concurrency:1000});
     
     return source(values)
       .pipe(s)

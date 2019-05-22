@@ -1,17 +1,20 @@
 /// <reference types="node" />
 
 import stream = require('stream');
-import { promises } from 'fs';
 
-interface options {
+interface options  {
   concurrency?: number
+  catch?(cb: Function): void
+  flush?(cb: Function): void
+  maxBuffer?: number
+  keepAlive?: boolean
+  fn?: Function
 }
 
 declare class Streamz extends stream.Transform {
-  constructor(_c?: number | Function | options, fn?: Function | options, options?: options)
+  constructor(fn?: Function, options?: options)
   _fn(d: any, cb?: Function) : any
   promise() : Promise<any>
 }
 
-declare function streamz(_c : number | Function | options, fn: Function | options, options: options) : Streamz
-export = streamz;
+export = Streamz;

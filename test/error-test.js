@@ -1,5 +1,5 @@
-const streamz = require('../streamz');
-const Promise = require('bluebird');
+const Streamz = require('../streamz');
+const Bluebird = require('bluebird');
 const valueStream = require('./lib/source');
 const fs = require('fs');
 const t = require('tap');
@@ -9,14 +9,14 @@ t.test('error', {autoend:true, jobs: 10}, t => {
     let max,err;
 
     valueStream()
-      .pipe(streamz(d => {
+      .pipe(new Streamz(d => {
         if (d == 5) throw 'EXCEPTION';
         else return d;  
       }))
       .on('error',e => err = e)
-      .pipe(streamz(d => max = d));
+      .pipe(new Streamz(d => max = d));
 
-    return Promise.delay(400)
+    return Bluebird.delay(400)
       .then(() => {
         t.same(err,'EXCEPTION','emits error');
         t.same(max,4,'stops');
@@ -27,14 +27,14 @@ t.test('error', {autoend:true, jobs: 10}, t => {
     let max,err;
 
     valueStream()
-      .pipe(streamz((d,cb) => {
+      .pipe(new Streamz((d,cb) => {
         if (d == 5) cb('EXCEPTION');
         else cb(null,d);
       }))
       .on('error',e => err = e)
-      .pipe(streamz(d => max = d));
+      .pipe(new Streamz(d => max = d));
 
-    return Promise.delay(400)
+    return Bluebird.delay(400)
       .then(() => {
         t.same(err,'EXCEPTION','emits error');
         t.same(max,4,'stops');
@@ -45,15 +45,15 @@ t.test('error', {autoend:true, jobs: 10}, t => {
     let max,err;
 
     valueStream()
-      .pipe(streamz(d => {
+      .pipe(new Streamz(d => {
         if (d == 5) return Promise.reject('EXCEPTION');
         else return Promise.resolve(d);
       }))
-      .pipe(streamz(d => max = d))
+      .pipe(new Streamz(d => max = d))
       .promise()
       .catch(e => err = e);
     
-    return Promise.delay(400)
+    return Bluebird.delay(400)
       .then(() => {
         t.same(err,'EXCEPTION','emits');
         t.same(max,4,'stops');
@@ -64,15 +64,15 @@ t.test('error', {autoend:true, jobs: 10}, t => {
     let max,err;
 
     valueStream()
-      .pipe(streamz(async function(d) {
-        if (d == 5) await Promise.delay(100).then(() => Promise.reject('EXCEPTION'));
-        else return Promise.resolve(d);
+      .pipe(new Streamz(async function(d) {
+        if (d == 5) await Bluebird.delay(100).then(() => Bluebird.reject('EXCEPTION'));
+        else return Bluebird.resolve(d);
       }))
-      .pipe(streamz(d => max = d))
+      .pipe(new Streamz(d => max = d))
       .promise()
       .catch(e => err = e);
     
-    return Promise.delay(400)
+    return Bluebird.delay(400)
       .then(() => {
         t.same(err,'EXCEPTION','emits');
         t.same(max,4,'stops');
@@ -83,15 +83,15 @@ t.test('error', {autoend:true, jobs: 10}, t => {
     let max,err;
 
     valueStream()
-      .pipe(streamz(async function(d) {
-        if (d == 5) await Promise.delay(100).then(() => Promise.reject('EXCEPTION'));
-        else return Promise.resolve(d);
+      .pipe(new Streamz(async function(d) {
+        if (d == 5) await Bluebird.delay(100).then(() => Bluebird.reject('EXCEPTION'));
+        else return Bluebird.resolve(d);
       }))
-      .pipe(streamz(d => max = d))
+      .pipe(new Streamz(d => max = d))
       .promise()
       .catch(e => err = e);
     
-    return Promise.delay(400)
+    return Bluebird.delay(400)
       .then(() => {
         t.same(err,'EXCEPTION','emits');
         t.same(max,4,'stops');
@@ -100,7 +100,7 @@ t.test('error', {autoend:true, jobs: 10}, t => {
 
   t.test('error in component above',t => {
     return fs.createReadStream('this_file_does_not_exists')
-      .pipe(streamz())
+      .pipe(new Streamz())
       .promise()
       .then(
         () => {throw 'Should Error';},
@@ -110,7 +110,7 @@ t.test('error', {autoend:true, jobs: 10}, t => {
 
   t.test('error without any child pipes', t => {
     try {
-      streamz().emit('error','this is an error');
+      new Streamz().emit('error','this is an error');
     }
     catch(e) {
       t.equal(e,'this is an error','throws');
@@ -124,16 +124,16 @@ t.test('catch', {autoend:true, jobs: 10}, t => {
     let max,err;
 
     valueStream()
-      .pipe(streamz(d => {
+      .pipe(new Streamz(d => {
         if (d == 5) throw 'EXCEPTION';
         else return d;  
       },{catch: e => {
         throw `Found: ${e}`;
       }}))
       .on('error',e => err = e)
-      .pipe(streamz(d => max = d));
+      .pipe(new Streamz(d => max = d));
 
-    return Promise.delay(400)
+    return Bluebird.delay(400)
       .then(() => {
         t.same(err,'Found: EXCEPTION','emits error');
         t.same(max,4,'stops');
@@ -144,16 +144,16 @@ t.test('catch', {autoend:true, jobs: 10}, t => {
     let max,err;
 
     valueStream()
-      .pipe(streamz((d,cb) => {
+      .pipe(new Streamz((d,cb) => {
         if (d == 5) cb('EXCEPTION');
         else cb(null,d);
       },{catch: e => {
         throw `Found: ${e}`;
       }}))
       .on('error',e => err = e)
-      .pipe(streamz(d => max = d));
+      .pipe(new Streamz(d => max = d));
 
-    return Promise.delay(400)
+    return Bluebird.delay(400)
       .then(() => {
         t.same(err,'Found: EXCEPTION','emits error');
         t.same(max,4,'stops');
@@ -164,17 +164,17 @@ t.test('catch', {autoend:true, jobs: 10}, t => {
     let max,err;
 
     valueStream()
-      .pipe(streamz(d => {
-        if (d == 5) return Promise.reject('EXCEPTION');
-        else return Promise.resolve(d);
+      .pipe(new Streamz(d => {
+        if (d == 5) return Bluebird.reject('EXCEPTION');
+        else return Bluebird.resolve(d);
       },{catch: e => {
         throw `Found: ${e}`;
       }}))
-      .pipe(streamz(d => max = d))
+      .pipe(new Streamz(d => max = d))
       .promise()
       .catch(e => err = e);
     
-    return Promise.delay(400)
+    return Bluebird.delay(400)
       .then(() => {
         t.same(err,'Found: EXCEPTION','emits');
         t.same(max,4,'stops');
@@ -185,17 +185,17 @@ t.test('catch', {autoend:true, jobs: 10}, t => {
     let max,err;
 
     valueStream()
-      .pipe(streamz(async function(d) {
-        if (d == 5) await Promise.delay(100).then(() => { throw 'EXCEPTION';});
+      .pipe(new Streamz(async function(d) {
+        if (d == 5) await Bluebird.delay(100).then(() => { throw 'EXCEPTION';});
         else return Promise.resolve(d);
       },{catch: e => {
         throw `Found: ${e}`;
       }}))
-      .pipe(streamz(d => max = d))
+      .pipe(new Streamz(d => max = d))
       .promise()
       .catch(e => err = e);
     
-    return Promise.delay(400)
+    return Bluebird.delay(400)
       .then(() => {
         t.same(err,'Found: EXCEPTION','emits');
         t.same(max,4,'stops');
@@ -206,7 +206,7 @@ t.test('catch', {autoend:true, jobs: 10}, t => {
     let max,err,caughtErr,caughtData;
 
     valueStream()
-      .pipe(streamz(d => {
+      .pipe(new Streamz(d => {
         if (d == 5) throw 'EXCEPTION';
         else return d;  
       },{catch: (e,d) => {
@@ -214,9 +214,9 @@ t.test('catch', {autoend:true, jobs: 10}, t => {
         caughtData = d;
       }}))
       .on('error',e => err = e)
-      .pipe(streamz(d => max = d));
+      .pipe(new Streamz(d => max = d));
 
-    return Promise.delay(400)
+    return Bluebird.delay(400)
       .then(() => {
         t.same(caughtErr,'EXCEPTION','The error is caught');
         t.same(caughtData,5);

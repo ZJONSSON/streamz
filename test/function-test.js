@@ -1,4 +1,4 @@
-const streamz = require('../streamz');
+const Streamz = require('../streamz');
 const Promise = require('bluebird');
 const source = require('./lib/source');
 const t = require('tap');
@@ -14,14 +14,14 @@ function test(s,m,t,e) {
 
 t.test('function',{autoend:true,jobs:10}, t => {
   t.test('none',t => {
-    return test(streamz(),1,t,'passes through data');
+    return test(new Streamz(),1,t,'passes through data');
   });
 
   t.test('pushing',t => {
     const fn = function(d) {
       this.push(d*2);
     };
-    return test(streamz(fn),2,t,'processes data');
+    return test(new Streamz(fn),2,t,'processes data');
   });
 
   t.test('with callback', t => {
@@ -31,7 +31,7 @@ t.test('function',{autoend:true,jobs:10}, t => {
         cb();
       },10);
     };
-    return test(streamz(fn),2,t,'processes data');
+    return test(new Streamz(fn),2,t,'processes data');
   });
 
   t.test('with promise that pushes', t => {
@@ -41,7 +41,7 @@ t.test('function',{autoend:true,jobs:10}, t => {
           this.push(d*2);
         });
     };
-    return test(streamz(fn),2,t,'processes data');
+    return test(new Streamz(fn),2,t,'processes data');
   });
 
   t.test('with promise that returns', t => {
@@ -49,7 +49,7 @@ t.test('function',{autoend:true,jobs:10}, t => {
       return Promise.delay(20)
         .then(() => d*2);
     };
-    return test(streamz(fn),2,t,'processes data');
+    return test(new Streamz(fn),2,t,'processes data');
   });
 
   t.test('both pushing and returning', t => {
@@ -58,11 +58,11 @@ t.test('function',{autoend:true,jobs:10}, t => {
       return d*2;
     };
 
-    return test(streamz(fn),4,t,'processes data');
+    return test(new Streamz(fn),4,t,'processes data');
   });
 
   t.test('write after stream ended',t => {
-    const s = streamz(function(d) {
+    const s = new Streamz(function(d) {
       if (d === 8 || d === 9)
         return Promise.delay(10)
           .then(() => {
@@ -86,7 +86,7 @@ t.test('function',{autoend:true,jobs:10}, t => {
       },10);
       return d*2;
     };
-    return test(streamz(fn),4,t,'processes data');
+    return test(new Streamz(fn),4,t,'processes data');
   });
 
   t.test('with promise resolving in push and return value', t => {
@@ -97,15 +97,15 @@ t.test('function',{autoend:true,jobs:10}, t => {
           return d*2;
         });
     };
-    return test(streamz(fn),4,t,'processes data');
+    return test(new Streamz(fn),4,t,'processes data');
   });
 
   t.test('with `fn` defined in options', t => {
-    return test(streamz({fn : d => d*2}),2,t,'processes data');
+    return test(new Streamz(null, {fn : d => d*2}),2,t,'processes data');
   });
 
   t.test('.end() called with value', t => {
-    const s = streamz();
+    const s = new Streamz();
     s.write(1);
     s.write(2);
     s.end(3);

@@ -3,37 +3,10 @@ const Promise = require('bluebird');
 const noop = () => undefined;
 
 class Streamz extends Transform {
-  constructor(_c, fn, options) {
-    super(options || fn || _c);
-    if (isNaN(_c)) {
-      options = fn;
-      fn = _c;
-      _c = undefined;
-    }
-
-    if (typeof fn !== 'function') {
-      options = fn;
-      fn = undefined;
-    }
-
-    // Legacy way to define concurrency
-    if (!_c && options && !isNaN(options)) {
-      _c = options;
-      options = undefined;
-    }
-    options = options || {};
-    if (!isNaN(_c)) options.concurrency = _c;
-  
-    options = options || {};
+  constructor(fn, options) {
+    super(options = Object.assign({highWaterMark: 10}, options, {objectMode: true}));
     this.options = options;
-    options.objectMode = true;
-
-    if (options.highWaterMark === undefined) 
-      options.highWaterMark = 10;
-
-    Transform.call(this,options);
-
-    this._concurrency = _c || options.concurrency || options.cap || 1;
+    this._concurrency =  options.concurrency || options.cap || 1;
 
     if (fn)
       this._fn = fn;
@@ -51,7 +24,9 @@ class Streamz extends Transform {
       this._catch = options.catch;
 
     this.on('error',e => {
+      // @ts-ignore
       if (this._events.error.length < 2) {
+        // @ts-ignore
         const pipes = this._readableState.pipes;
         if (pipes) [].concat(pipes).forEach(child => child.emit('error', e));
         else throw e;
@@ -74,6 +49,7 @@ class Streamz extends Transform {
       this.emit('error',e);
   }
 
+  // @ts-ignore
   _transform(d, e, _cb) {
     let ret;
 
@@ -109,6 +85,7 @@ class Streamz extends Transform {
     let vanillaCb = done;
     
     try {
+      // @ts-ignore
       ret = this._fn(d, (e, d) => {
         if (e)
           this.emitError(e,d);
@@ -121,10 +98,12 @@ class Streamz extends Transform {
       vanillaCb();
     }
 
+    // @ts-ignore
     if (ret && typeof ret.then === 'function') {
       // switch reference to the original stream callback
       // and only call done when the promise is resolved
       vanillaCb = pop;
+      // @ts-ignore
       ret.then(d => {
         if (d !== undefined)
           this.push(d);
@@ -157,8 +136,9 @@ class Streamz extends Transform {
       this._transform(d, null, noop);
     if (this._incomingPipes < 1) {
       this._finalize = () => {
+        // @ts-ignore
         if (!this._concurrent && !this._writableState.length)
-          Transform.prototype.end.apply(this, undefined, cb);
+          Transform.prototype.end.apply(this, cb);
       };
       this._finalize();
     }
@@ -186,6 +166,4 @@ class Streamz extends Transform {
   }
 }
 
-module.exports = function(_c, fn, options) {
-  return new Streamz(_c, fn, options);
-};
+module.exports = Streamz;

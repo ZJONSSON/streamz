@@ -1,4 +1,4 @@
-const streamz = require('../streamz');
+const Streamz = require('../streamz');
 const Promise = require('bluebird');
 const source = require('./lib/source');
 const t = require('tap');
@@ -31,7 +31,7 @@ function test(s) {
 
 t.test('non-overlapping pipes',{autoend:true,jobs:2}, t => {
   t.test('without keepAlive',t => {
-    return test(streamz())
+    return test(new Streamz())
       .then(() => {
         throw 'SHOULD_ERROR';
       },e => {
@@ -40,7 +40,7 @@ t.test('non-overlapping pipes',{autoend:true,jobs:2}, t => {
   });
 
   t.test('with keepAlive',t => {
-    return test(streamz(Number,{keepAlive:true}))
+    return test(new Streamz(Number,{keepAlive:true}))
       .then(d => t.same(d,[1,2,3,4,1,2,3,4],'stream stays open'));
   });
 });

@@ -1,4 +1,4 @@
-const streamz = require('../streamz');
+const Streamz = require('../streamz');
 const Promise = require('bluebird');
 const valueStream = require('./lib/source');
 const t = require('tap');
@@ -9,15 +9,15 @@ t.test('error propagation',{autoend:true, jobs: 2}, t => {
     let max,err;
 
     valueStream()
-      .pipe(streamz(d => {
+      .pipe(new Streamz(d => {
         if (d == 5) return Promise.reject('EXCEPTION');
         else return d;
       }))
-      .pipe(streamz(d => max = d))
-      .pipe(streamz())
-      .pipe(streamz())
+      .pipe(new Streamz(d => max = d))
+      .pipe(new Streamz())
+      .pipe(new Streamz())
       .on('error',e => err = e)
-      .pipe(streamz())
+      .pipe(new Streamz())
       .on('error',() => err = 'should not be picked up here');
     
     return Promise.delay(200)
@@ -31,13 +31,13 @@ t.test('error propagation',{autoend:true, jobs: 2}, t => {
     let max,err;
 
     return valueStream()
-      .pipe(streamz(d => {
+      .pipe(new Streamz(d => {
         if (d == 5) return Promise.reject('EXCEPTION');
         else return Promise.resolve(d);
       }))
-      .pipe(streamz(d => max = d))
-      .pipe(streamz())
-      .pipe(streamz())
+      .pipe(new Streamz(d => max = d))
+      .pipe(new Streamz())
+      .pipe(new Streamz())
       .promise()
       .catch(e => err = e)
       .then(() => {

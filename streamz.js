@@ -135,7 +135,7 @@ Streamz.prototype._transform = function(d, e, _cb) {
     },e => {
       this.emitError(e,d);
     })
-    .then(done);
+    .finally(done);
   } else {
     // If we got non-promise value, we push it
     if (ret !== undefined)

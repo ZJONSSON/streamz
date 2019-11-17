@@ -168,16 +168,8 @@ Streamz.prototype.end = function(d,cb) {
 };
 
 Streamz.prototype.promise = function() {
-  let size = 0;
   const buffer = [];
   const bufferStream = Streamz(d => {
-    if (this.options.maxBuffer) {
-      size += (d && d.length) || 1;
-      if (size > this.options.maxBuffer) {
-        this.emitError(new Error('max buffer size reached'));
-        return;
-      }
-    }
     buffer.push(d);
   });
         

@@ -129,7 +129,7 @@ Streamz.prototype._transform = function(d, e, _cb) {
     // switch reference to the original stream callback
     // and only call done when the promise is resolved
     vanillaCb = pop;
-    ret.then(d => {
+    Promise.resolve(ret).then(d => {
       if (d !== undefined)
         this.push(d);
     },e => {

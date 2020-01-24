@@ -1,6 +1,6 @@
 {
   "name": "streamz",
-  "version": "1.8.9",
+  "version": "1.8.10",
   "description": "A Swiss-army-knife of a stream",
   "keywords": [
     "asynchronous",

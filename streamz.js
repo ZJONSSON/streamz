@@ -51,7 +51,7 @@ function Streamz(_c, fn, options) {
   this.on('error',e => {
     if (this._events.error.length < 2) {
       const pipes = this._readableState.pipes;
-      if (pipes) [].concat(pipes).forEach(child => child.emit('error', e));
+      if (pipes && (pipes instanceof stream || pipes.length)) [].concat(pipes).forEach(child => child.emit('error', e));
       else throw e;
     }
   });

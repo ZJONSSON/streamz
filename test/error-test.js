@@ -16,7 +16,7 @@ t.test('error', {autoend:true, jobs: 10}, t => {
       .on('error',e => err = e)
       .pipe(streamz(d => max = d));
 
-    return Promise.delay(400)
+    return Promise.delay(1000)
       .then(() => {
         t.same(err,'EXCEPTION','emits error');
         t.same(max,4,'stops');
@@ -34,7 +34,7 @@ t.test('error', {autoend:true, jobs: 10}, t => {
       .on('error',e => err = e)
       .pipe(streamz(d => max = d));
 
-    return Promise.delay(400)
+    return Promise.delay(1000)
       .then(() => {
         t.same(err,'EXCEPTION','emits error');
         t.same(max,4,'stops');
@@ -53,7 +53,7 @@ t.test('error', {autoend:true, jobs: 10}, t => {
       .promise()
       .catch(e => err = e);
     
-    return Promise.delay(400)
+    return Promise.delay(1000)
       .then(() => {
         t.same(err,'EXCEPTION','emits');
         t.same(max,4,'stops');
@@ -72,7 +72,7 @@ t.test('error', {autoend:true, jobs: 10}, t => {
       .promise()
       .catch(e => err = e);
     
-    return Promise.delay(400)
+    return Promise.delay(1000)
       .then(() => {
         t.same(err,'EXCEPTION','emits');
         t.same(max,4,'stops');
@@ -91,7 +91,7 @@ t.test('error', {autoend:true, jobs: 10}, t => {
       .promise()
       .catch(e => err = e);
     
-    return Promise.delay(400)
+    return Promise.delay(1000)
       .then(() => {
         t.same(err,'EXCEPTION','emits');
         t.same(max,4,'stops');
@@ -133,7 +133,7 @@ t.test('catch', {autoend:true, jobs: 10}, t => {
       .on('error',e => err = e)
       .pipe(streamz(d => max = d));
 
-    return Promise.delay(400)
+    return Promise.delay(1000)
       .then(() => {
         t.same(err,'Found: EXCEPTION','emits error');
         t.same(max,4,'stops');
@@ -153,7 +153,7 @@ t.test('catch', {autoend:true, jobs: 10}, t => {
       .on('error',e => err = e)
       .pipe(streamz(d => max = d));
 
-    return Promise.delay(400)
+    return Promise.delay(1000)
       .then(() => {
         t.same(err,'Found: EXCEPTION','emits error');
         t.same(max,4,'stops');
@@ -174,7 +174,7 @@ t.test('catch', {autoend:true, jobs: 10}, t => {
       .promise()
       .catch(e => err = e);
     
-    return Promise.delay(400)
+    return Promise.delay(1000)
       .then(() => {
         t.same(err,'Found: EXCEPTION','emits');
         t.same(max,4,'stops');
@@ -195,7 +195,7 @@ t.test('catch', {autoend:true, jobs: 10}, t => {
       .promise()
       .catch(e => err = e);
     
-    return Promise.delay(400)
+    return Promise.delay(1000)
       .then(() => {
         t.same(err,'Found: EXCEPTION','emits');
         t.same(max,4,'stops');
@@ -216,7 +216,7 @@ t.test('catch', {autoend:true, jobs: 10}, t => {
       .on('error',e => err = e)
       .pipe(streamz(d => max = d));
 
-    return Promise.delay(400)
+    return Promise.delay(1000)
       .then(() => {
         t.same(caughtErr,'EXCEPTION','The error is caught');
         t.same(caughtData,5);

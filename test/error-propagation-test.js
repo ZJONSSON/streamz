@@ -20,7 +20,7 @@ t.test('error propagation',{autoend:true, jobs: 2}, t => {
       .pipe(streamz())
       .on('error',() => err = 'should not be picked up here');
     
-    return Promise.delay(200)
+    return Promise.delay(1000)
       .then(() => {
         t.same(err,'EXCEPTION','picks up error');
         t.same(max,4,'stops stream');

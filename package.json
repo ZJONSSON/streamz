@@ -1,13 +1,13 @@
 {
   "name": "streamz",
-  "version": "1.8.8",
+  "version": "1.8.9",
   "description": "A Swiss-army-knife of a stream",
   "keywords": [
     "asynchronous",
     "stream"
   ],
   "scripts": {
-    "test": "tap test --jobs=10 -Rspec --coverage-report=html --no-browser"
+    "test": "tap test --jobs=4 -Rspec --coverage-report=html --no-browser"
   },
   "author": "Ziggy Jonsson (http://github.com/zjonsson/)",
   "repository": {

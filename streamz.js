@@ -155,8 +155,9 @@ Streamz.prototype._fn = function(d) {
 Streamz.prototype._finalize = function() {
   // In node 14 we need to look at `_writableState.buffered.length` - in older versions we look at `_writableState.length`
   if (this.endedCb && !this._concurrent && (this._writableState.buffered && !this._writableState.buffered.length || !this._writableState.length)) {
-    stream.Transform.prototype.end.apply(this, undefined, this.endedCb);
-    this.endedCb = noop;
+    let endedCb = this.endedCb;
+    this.endedCb = undefined;
+    stream.Transform.prototype.end.apply(this, undefined, endedCb);
   }
 }
 
@@ -168,7 +169,7 @@ Streamz.prototype.end = function(d,cb) {
       this.endedCb = cb || noop;
       this._finalize();
     } else {
-     if (cb) cb();
+      if (cb) cb();
     }
   }
 

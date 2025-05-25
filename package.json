@@ -1,6 +1,6 @@
 {
   "name": "streamz",
-  "version": "1.8.12",
+  "version": "1.8.13",
   "description": "A Swiss-army-knife of a stream",
   "keywords": [
     "asynchronous",
@@ -20,6 +20,8 @@
     "bluebird": "~3.7.2"
   },
   "devDependencies": {
-    "tap": "^14.9.2"
+    "@types/node": "^22.15.21",
+    "tap": "^14.9.2",
+    "typescript": "^5.8.3"
   }
 }

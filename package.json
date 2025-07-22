@@ -21,7 +21,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.15.21",
-    "tap": "^14.9.2",
+    "tap": "^21.1.0",
     "typescript": "^5.8.3"
   }
 }
